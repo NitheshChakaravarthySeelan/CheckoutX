@@ -1,7 +1,7 @@
 package com.community.orders.refund.interfaces.kafka;
 
 import org.springframework.kafka.annotation.KafkaListener;
-
+import org.springframework.stereotype.Component;
 import com.community.orders.refund.application.service.RefundService;
 import com.community.orders.refund.interfaces.dto.RefundRequest;
 

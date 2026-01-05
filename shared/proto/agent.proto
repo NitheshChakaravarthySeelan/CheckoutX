@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package agent.v1;
+
+import "google/protobuf/struct.proto";
+
+// The Agent service definition.
+service AgentService {
+  // Executes a workflow based on a user query.
+  // This is a streaming RPC, allowing for real-time updates on the workflow's progress.
+  rpc ExecuteWorkflow(ExecuteWorkflowRequest) returns (stream ExecuteWorkflowResponse);
+}
+
+// The request message for the ExecuteWorkflow RPC.
+message ExecuteWorkflowRequest {
+  string user_query = 1;
+}
+
+// The response message for the ExecuteWorkflow RPC.
+message ExecuteWorkflowResponse {
+  oneof event {
+    WorkflowStartedEvent workflow_started = 1;
+    ToolStartedEvent tool_started = 2;
+    ToolEndedEvent tool_ended = 3;
+    WorkflowEndedEvent workflow_ended = 4;
+    WorkflowErrorEvent workflow_error = 5;
+  }
+}
+
+message WorkflowStartedEvent {
+  string workflow_id = 1;
+}
+
+message ToolStartedEvent {
+  string tool_name = 1;
+  google.protobuf.Value input = 2;
+}
+
+message ToolEndedEvent {
+  string tool_name = 1;
+  google.protobuf.Value output = 2;
+}
+
+message WorkflowEndedEvent {
+  string final_response = 1;
+}
+
+message WorkflowErrorEvent {
+  string error_message = 1;
+}

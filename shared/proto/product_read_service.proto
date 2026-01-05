@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package product_read;
+
+import "product.proto";
+
+option java_package = "com.community.catalog.proto.product_read";
+option java_multiple_files = true;
+option go_package = "github.com/community-platform/product_read;product_read";
+
+service ProductReadService {
+  rpc GetProductById (GetProductByIdRequest) returns (product.Product);
+  rpc GetAllProducts (GetAllProductsRequest) returns (GetAllProductsResponse);
+  rpc SearchProducts(SearchProductsRequest) returns (SearchProductsResponse);
+}
+
+message GetProductByIdRequest {
+  string id = 1;
+}
+
+message GetAllProductsRequest {}
+
+message GetAllProductsResponse {
+  repeated product.Product products = 1;
+}
+
+message SearchProductsRequest {
+  string query = 1;
+}
+
+message SearchProductsResponse {
+  repeated product.Product products = 1;
+}

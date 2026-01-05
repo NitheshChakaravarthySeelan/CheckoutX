@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "agent-service"
+version = "0.1.0"
+description = "AI agent service for autonomous shopping."
+authors = ["NitheshChakaravarthySeelan <albertnitheesh@gmail.com>"]
+readme = "README.md"
+packages = [{include = "agent_service"}]
+
+[tool.poetry.dependencies]
+python = ">=3.12, <4.0"
+langgraph = "^0.0.30"
+langchain-google-genai = "^0.0.6"
+fastapi = "^0.109.2"
+uvicorn = "^0.27.1"
+grpcio = "^1.62.0"
+grpcio-tools = "^1.62.0"
+python-dotenv = "^1.0.1"
+anthropic = "^0.21.3"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+black = "^24.2.0"
+ruff = "^0.2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
