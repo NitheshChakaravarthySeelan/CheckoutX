@@ -7,6 +7,7 @@ import json
 import logging
 from typing import Dict, Any
 import uuid
+import httpx
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -98,10 +99,10 @@ class KafkaConsumerManager:
             if event_id in saga_state.processed_event_ids:
                 logger.info(f"Event {event_id} for saga {saga_id} already processed. Skipping.")
                 return
-            
+
             # Add event_id to processed list and update saga state BEFORE processing
             saga_state.processed_event_ids.append(event_id)
-            
+
             logger.info(f"Processing event '{event_type}' with event_id '{event_id}' for saga '{saga_id}' in state '{saga_state.state}'")
 
             # Saga orchestration logic based on current state and event type
@@ -125,7 +126,7 @@ class KafkaConsumerManager:
                 await self.handle_cart_clearance_failed(saga_state, event_data)
             else:
                 logger.warning(f"No handler for event_type '{event_type}' in state '{saga_state.state}' for saga {saga_id}")
-            
+
             # Persist updated saga state after processing
             saga_state.updated_at = datetime.datetime.now(datetime.timezone.utc)
             await self.saga_repository.update(saga_state)
@@ -137,7 +138,7 @@ class KafkaConsumerManager:
 
     async def handle_checkout_initiated(self, saga_state: SagaState, event_data: Dict[str, Any]):
         logger.info(f"Handling CheckoutInitiated event for saga {saga_state.id}")
-        
+
         # Update saga state to pending inventory reservation
         saga_state.state = SAGA_STATE_INVENTORY_RESERVATION_PENDING
         saga_state.context["current_step"] = "INVENTORY_RESERVATION_SENT"
@@ -164,6 +165,10 @@ class KafkaConsumerManager:
         saga_state.context["current_step"] = "PAYMENT_REQUEST_SENT"
         saga_state.context["inventory_reservation_details"] = event_data.get("reservation_details")
 
+        # Need to make sync post request for the discount and tax
+        payment_discount_payload = {
+
+        }
         # Publish command to Payment Service
         payment_command_payload = {
             "type": "ProcessPayment",
@@ -264,7 +269,7 @@ class KafkaConsumerManager:
         saga_state.context["errors"].append({"step": "cart_clearance", "reason": event_data.get("reason")})
         # Compensating transactions already published by previous failures or if this is the only one.
         logger.info(f"Saga {saga_state.id} marked as COMPENSATING due to cart clearance failure.")
-    
+
     async def _publish_compensate_inventory_command(self, saga_state: SagaState):
         logger.info(f"Publishing CompensateInventory command for saga {saga_state.id}")
         compensate_payload = {
