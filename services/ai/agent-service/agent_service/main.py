@@ -15,6 +15,8 @@ import uuid
 
 # Client Imports
 from agent_service.clients.product_lookup_client import product_lookup_client
+from agent_service.clients.product_read_client import product_read_client
+from agent_service.clients.cart_crud_client import cart_client
 
 class AgentState(TypedDict):
     user_query: str
@@ -35,16 +37,13 @@ async def search_product(product_name: str) -> List[Dict[str, Any]]:
     Returns:
         A list of products that match the name.
     """
-    # TODO: Implement the gRPC call to the product-read service.
     print(f"Searching for product: {product_name}")
-    # For now, let's return some dummy data.
-    return [
-        {"id": "123", "name": "Red T-Shirt", "price": 15.99},
-        {"id": "456", "name": "Blue Jeans", "price": 45.00},
-    ]
+    results = await product_read_client.search_product(product_name)
+    print(f"Found {len(results)} products.")
+    return results
 
 @mcp.tool
-def add_to_cart(product_id: str, quantity: int) -> Dict[str, Any]:
+async def add_to_cart(product_id: str, quantity: int) -> Dict[str, Any]:
     """
     Adds a product to the shopping cart.
 
@@ -55,10 +54,11 @@ def add_to_cart(product_id: str, quantity: int) -> Dict[str, Any]:
     Returns:
         The updated state of the shopping cart.
     """
-    # TODO: Implement the gRPC call to the cart-crud service.
     print(f"Adding {quantity} of product {product_id} to the cart.")
-    # For now, let's return some dummy data.
-    return {"items": [{"product_id": product_id, "quantity": quantity}]}
+    # TODO: Get user_id from agent context
+    user_id = "test-user-123"
+    updated_cart = await cart_client.add_item_to_cart(user_id=user_id, product_id=product_id, quantity=quantity)
+    return updated_cart
 
 @mcp.tool
 async def checkout() -> Dict[str, Any]:
@@ -68,9 +68,23 @@ async def checkout() -> Dict[str, Any]:
     Returns:
         A confirmation of the checkout process.
     """
-    # TODO: Implement the gRPC call to the checkout-orchestrator service.
-    print("Initiating checkout.")
-    return {"status": "success", "message": "Checkout initiated."}
+    print("Initiating a checkout")
+    try:
+        # TODO: Replace with actual user_id from agent context
+        user_id = "test-user-123"
+        checkout_id = await checkout_client.initiate_checkout(user_id = user_id)
+        print(f"Checkout initiated with ID: {checkout_id}")
+        return {
+            "status": "initiated",
+            "checkout_id": {checkout_id},
+            "message": f"Checkout process started Track with ID: {checkout_id}"
+        }
+    except Exception as e:
+        print(f"Checkout initiation failed: {e}")
+        return {
+            "status": "failed",
+            "error": str(e)
+        }
 
 @mcp.tool
 async def get_product_details(product_id: str) -> Dict[str, Any]:
@@ -95,7 +109,7 @@ async def get_product_details(product_id: str) -> Dict[str, Any]:
 
 
 @mcp.tool
-def update_cart(product_id: str, quantity: int) -> Dict[str, Any]:
+async def update_cart(product_id: str, quantity: int) -> Dict[str, Any]:
     """
     Updates the quantity of a product in the shopping cart.
 
@@ -106,12 +120,14 @@ def update_cart(product_id: str, quantity: int) -> Dict[str, Any]:
     Returns:
         The updated state of the shopping cart.
     """
-    # TODO: Implement the gRPC call to the cart-crud service.
     print(f"Updating quantity of product {product_id} to {quantity}.")
-    return {"items": [{"product_id": product_id, "quantity": quantity}]}
+    # TODO: Get user_id from agent context
+    user_id = "test-user-123"
+    updated_cart = await cart_client.update_item_quantity(user_id=user_id, product_id=product_id, quantity=quantity)
+    return updated_cart
 
 @mcp.tool
-def remove_from_cart(product_id: str) -> Dict[str, Any]:
+async def remove_from_cart(product_id: str) -> Dict[str, Any]:
     """
     Removes a product from the shopping cart.
 
@@ -121,21 +137,25 @@ def remove_from_cart(product_id: str) -> Dict[str, Any]:
     Returns:
         The updated state of the shopping cart.
     """
-    # TODO: Implement the gRPC call to the cart-crud service.
     print(f"Removing product {product_id} from the cart.")
-    return {"items": []}
+    # TODO: Get user_id from agent context
+    user_id = "test-user-123"
+    updated_cart = await cart_client.remove_item_from_cart(user_id=user_id, product_id=product_id)
+    return updated_cart
 
 @mcp.tool
-def view_cart() -> Dict[str, Any]:
+async def view_cart() -> Dict[str, Any]:
     """
     Views the current state of the shopping cart.
 
     Returns:
         The current state of the shopping cart.
     """
-    # TODO: Implement the gRPC call to the cart-crud service.
     print("Viewing cart.")
-    return {"items": [{"product_id": "123", "quantity": 1}]}
+    # TODO: Get user_id from agent context
+    user_id = "test-user-123"
+    cart = await cart_client.get_cart(user_id=user_id)
+    return cart
 
 # Initialize the model
 # TODO: Get the API key from environment variables

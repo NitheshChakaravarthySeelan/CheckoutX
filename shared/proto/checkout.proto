@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package checkout;
+
+enum CheckoutState {
+  STATE_UNSPECIFIED = 0;
+  PENDING = 1;
+  PROCESSING = 2;
+  COMPLETED = 3;
+  FAILED = 4;
+  CANCELLED = 5;
+}
+
+// Service definition for the checkout orchestrator
+service CheckoutService {
+  rpc InitiateCheckout(InitiateCheckoutRequest) returns (InitiateCheckoutResponse);
+
+  rpc GetCheckoutStatus(GetCheckoutStatusRequest) returns (GetCheckoutStatusResponse);
+}
+
+// --- InitiateCheckout Messages ---
+message InitiateCheckoutRequest {
+  // We can assume that other necessary details would be fetched by the orchestrator
+  string user_id = 1;
+}
+
+message InitiateCheckoutResponse {
+  string checkout_id = 1;
+}
+
+// --- GetCheckoutStatus Messages ---
+message GetCheckoutStatusRequest {
+  string checkout_id = 1;
+}
+
+message GetCheckoutStatusResponse {
+  string checkout_id = 1;
+  CheckoutState state = 2;
+  string message = 3;
+}
