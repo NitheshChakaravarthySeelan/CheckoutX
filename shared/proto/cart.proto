@@ -1,0 +1,61 @@
+syntax = "proto3";
+
+package cart;
+
+// Represents a single item in the shopping cart
+message CartItem {
+  string product_id = 1;
+  int32 quantity = 2;
+  // You might add more fields like price, name, image_url if needed for display within the cart
+}
+
+// Represents a user's shopping cart
+message Cart {
+  string user_id = 1;
+  repeated CartItem items = 2;
+}
+
+// --- CartService Definition ---
+service CartService {
+  // Adds an item to the user's cart or updates its quantity if already present
+  rpc AddItemToCart(AddItemToCartRequest) returns (CartResponse);
+
+  // Updates the quantity of an existing item in the cart
+  rpc UpdateItemQuantity(UpdateItemQuantityRequest) returns (CartResponse);
+
+  // Removes an item from the user's cart
+  rpc RemoveItemFromCart(RemoveItemFromCartRequest) returns (CartResponse);
+
+  // Retrieves the current state of the user's cart
+  rpc GetCart(GetCartRequest) returns (CartResponse);
+}
+
+// --- Request and Response Messages ---
+
+message AddItemToCartRequest {
+  string user_id = 1;
+  string product_id = 2;
+  int32 quantity = 3;
+}
+
+message UpdateItemQuantityRequest {
+  string user_id = 1;
+  string product_id = 2;
+  int32 quantity = 3; // The new quantity for the item
+}
+
+message RemoveItemFromCartRequest {
+  string user_id = 1;
+  string product_id = 2;
+}
+
+message GetCartRequest {
+  string user_id = 1;
+}
+
+// Common response for cart operations, includes the updated cart state
+message CartResponse {
+  Cart cart = 1;
+  // You could add a status field here if the operation has specific outcomes
+  // string status_message = 2;
+}
