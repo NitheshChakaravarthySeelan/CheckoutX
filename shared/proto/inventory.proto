@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package inventory;
+
+// Service for checking and potentially managing inventory levels
+service InventoryService {
+  // Checks the current stock level for a product
+  rpc CheckStock(CheckStockRequest) returns (CheckStockResponse);
+}
+
+// Request to check stock for a given product and quantity
+message CheckStockRequest {
+  string product_id = 1;
+  int32 quantity = 2; // The quantity to check availability for
+}
+
+// Response indicating stock availability and current level
+message CheckStockResponse {
+  string product_id = 1;
+  bool available = 2;
+  int32 current_stock = 3;
+  string message = 4; // Optional message, e.g., "Not enough stock"
+}

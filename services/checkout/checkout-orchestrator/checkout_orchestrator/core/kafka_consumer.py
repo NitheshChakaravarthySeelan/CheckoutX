@@ -8,6 +8,7 @@ import logging
 from typing import Dict, Any
 import uuid
 import httpx
+import os
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -34,13 +35,29 @@ SAGA_STATE_COMPLETED = "COMPLETED"
 SAGA_STATE_FAILED = "FAILED"
 SAGA_STATE_COMPENSATING = "COMPENSATING"
 
+# Base url for services
+DISCOUNT_ENGINE_BASE_URL = os.getenv("DISCOUNT_ENGINE_SERVICE_URL")
+
+if not DISCOUNT_ENGINE_BASE_URL:
+    raise RuntimeError("DISCOUNT_ENGINE_SERVICE_URL is not set")
+
+DISCOUNT_ENDPOINT = (
+    DISCOUNT_ENGINE_BASE_URL.rstrip("/")
+    + "/api/discounts/calculate"
+)
+
+TAX_SERVICE_URL = os.getenv("TAX_CALCULATION_SERVICE_URL")
+if not TAX_SERVICE_URL:
+    raise RuntimeError("TAX_CALCULATION_SERVICE_URL not set")
+
 class KafkaConsumerManager:
     def __init__(
         self,
         bootstrap_servers: str,
         database: Database,
         saga_repository: SagaRepository,
-        producer: AIOKafkaProducer
+        producer: AIOKafkaProducer,
+        httpx_client: httpx.AsyncClient,
     ):
         self.consumer = AIOKafkaConsumer(
             KAFKA_TOPIC_CHECKOUT_INITIATED,
@@ -53,6 +70,7 @@ class KafkaConsumerManager:
         self.saga_repository = saga_repository
         self.producer = producer
         self.running = False
+        self.httpx_client = httpx_client
 
     async def start_consumer(self):
         logger.info("Starting Kafka consumer...")
@@ -167,14 +185,63 @@ class KafkaConsumerManager:
 
         # Need to make sync post request for the discount and tax
         payment_discount_payload = {
-
+            "cartId": saga_state.context["cart_id"],
+            "user_id": saga_state.context["user_id"],
+            "items": saga_state.context["cart_details"]["items"]
         }
+
+        discount_response = await self.httpx_client.post("/api/discounts/calculate",json = payment_discount_payload, headers = {"Content-Type": "application/json"})
+
+        if discount_response.status_code != 200:
+            print(f"Discount engine returned {discount_respons.status_code}: {discount_response.text}")
+            raise
+        try:
+            data = discount_response.json()
+        except ValueError as e:
+            raise ValueError("Invalid JSON from discount engine")
+
+        # Extract the total_discount_cent from the response
+        try:
+            total_discount_cent  = data["totalDiscountCents"]
+        except KeyError as e:
+            raise KeyError("Missing totalDiscountcents in response")
+
+        # Store in the saga_state
+        saga_state.context["totalDiscountCents"] = total_discount_cent
+        await self.saga_repository.save(saga_state)
+
+        payment_tax_payload = {
+            "cartId": saga_state.context["cart_id"],
+            "items": saga_state.context["cart_details"]["items"],
+        }
+
+        tax_response = await self.httpx_client.post(
+            f"{TAX_SERVICE_URL.rstrip('/')}/api/tax/calculate",
+            json=payment_tax_payload,
+        )
+
+        if tax_response.status_code != 200:
+            raise RuntimeError(
+                f"Tax service returned {tax_response.status_code}: {tax_response.text}"
+            )
+
+        try:
+            tax_data = tax_response.json()
+            tax_cents = tax_data["taxCents"]
+        except (ValueError, KeyError):
+            raise RuntimeError("Invalid response from tax service")
+
+        saga_state.context["taxCents"] = tax_cents
+        await self.saga_repository.update(saga_state)
+
+        final_amount = saga_state.context["cart_details"]["total_price"] + saga_state.context["taxCents"] - saga_state.context["totalDiscountCents"]
+        saga_state.context["finalAmountCents"] = final_amount
         # Publish command to Payment Service
         payment_command_payload = {
             "type": "ProcessPayment",
             "saga_id": saga_state.id,
             "user_id": saga_state.context["user_id"],
-            "amount": saga_state.context["cart_details"]["total_price"], # Assuming cart_details has total_price
+            "amount": saga_state.context["finalAmountCents"],
             "event_id": str(uuid.uuid4()),
             "reply_to_topic": KAFKA_TOPIC_CHECKOUT_EVENTS,
         }

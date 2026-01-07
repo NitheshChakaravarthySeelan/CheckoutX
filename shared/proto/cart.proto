@@ -6,7 +6,9 @@ package cart;
 message CartItem {
   string product_id = 1;
   int32 quantity = 2;
-  // You might add more fields like price, name, image_url if needed for display within the cart
+  string name = 3;         // Denormalized product name
+  int64 price_cents = 4;   // Denormalized price at the time of adding, in cents
+  string image_url = 5;    // Denormalized product image URL
 }
 
 // Represents a user's shopping cart

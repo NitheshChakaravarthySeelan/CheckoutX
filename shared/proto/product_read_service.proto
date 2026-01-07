@@ -12,6 +12,8 @@ service ProductReadService {
   rpc GetProductById (GetProductByIdRequest) returns (product.Product);
   rpc GetAllProducts (GetAllProductsRequest) returns (GetAllProductsResponse);
   rpc SearchProducts(SearchProductsRequest) returns (SearchProductsResponse);
+  // Retrieves details for a specific product
+  rpc GetProductDetails(GetProductDetailsRequest) returns (product.Product);
 }
 
 message GetProductByIdRequest {
@@ -30,4 +32,9 @@ message SearchProductsRequest {
 
 message SearchProductsResponse {
   repeated product.Product products = 1;
+}
+
+// Request to get details for a product
+message GetProductDetailsRequest {
+  string product_id = 1;
 }
