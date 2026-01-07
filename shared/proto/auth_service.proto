@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package auth_service;
+
+// Service for user authentication and token validation
+service AuthService {
+  // Validates a given authentication token (e.g., JWT)
+  rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+}
+
+// Request to validate an authentication token
+message ValidateTokenRequest {
+  string token = 1;
+}
+
+// Response indicating the validity of the token and user details
+message ValidateTokenResponse {
+  bool is_valid = 1;
+  string user_id = 2;
+  string user_name = 3;
+  repeated string roles = 4;
+}

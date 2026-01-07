@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package cart_snapshot_service;
+
+import "cart.proto"; // Import the CartItem message definition
+
+// Represents an immutable snapshot of a user's cart at the point of checkout initiation
+message CartSnapshot {
+  string snapshot_id = 1;
+  string user_id = 2;
+  repeated cart.CartItem items = 3;
+  int64 total_price_cents = 4;
+  int64 total_discount_cents = 5;
+  int64 total_tax_cents = 6;
+  string shipping_address = 7; // For simplicity, a string representation of the address
+  string created_at = 8;     // ISO 8601 format timestamp
+}
+
+// Service for creating and retrieving cart snapshots
+service CartSnapshotService {
+  // Creates an immutable snapshot of the cart for checkout initiation
+  rpc CreateCartSnapshot(CreateCartSnapshotRequest) returns (CreateCartSnapshotResponse);
+
+  // Retrieves a specific cart snapshot by its ID
+  rpc GetCartSnapshot(GetCartSnapshotRequest) returns (CartSnapshotResponse);
+}
+
+// Request to create a cart snapshot
+message CreateCartSnapshotRequest {
+  string user_id = 1;
+  repeated cart.CartItem cart_items = 2;
+  int64 total_price_cents = 3;
+  int64 total_discount_cents = 4;
+  int64 total_tax_cents = 5;
+  string shipping_address = 6;
+}
+
+// Response after creating a cart snapshot
+message CreateCartSnapshotResponse {
+  string snapshot_id = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+// Request to retrieve a cart snapshot
+message GetCartSnapshotRequest {
+  string snapshot_id = 1;
+}
+
+// Response containing the requested cart snapshot
+message CartSnapshotResponse {
+  CartSnapshot snapshot = 1;
+  bool success = 2;
+  string message = 3;
+}

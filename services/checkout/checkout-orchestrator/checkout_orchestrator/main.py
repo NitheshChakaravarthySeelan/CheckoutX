@@ -26,9 +26,25 @@ async def metrics():
 
 @app.on_event("startup")
 async def startup_db_kafka():
+    global httpx_client
     await database.connect()
     await kafka_producer.start()
     print("Connected to database and Kafka producer started.")
+
+    # Initializing httpx connection
+    httpx_client = httpx.AsyncClient(
+        timeout= httpx.Timeout(
+            connect=5.0,
+            read=10.0,
+            write=10.0,
+            pool=5.0,
+        ),
+        limits=httpx.Limits(
+            max_connections=100,
+            max_keepalive_connections=20,
+        ),
+    )
+    print("httpx_client is successfully initialized")
 
     # Initialize and start Kafka Consumer Manager
     global kafka_consumer_manager
@@ -38,7 +54,8 @@ async def startup_db_kafka():
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
         database=database,
         saga_repository=saga_repository,
-        producer=kafka_producer
+        producer=kafka_producer,
+        httpx_client=httpx_client,
     )
     asyncio.create_task(kafka_consumer_manager.start_consumer())
     print("Kafka consumer manager started.")
@@ -46,11 +63,16 @@ async def startup_db_kafka():
 
 @app.on_event("shutdown")
 async def shutdown_db_kafka():
+    global httpx_client
     await database.disconnect()
     await kafka_producer.stop()
     if kafka_consumer_manager:
         await kafka_consumer_manager.stop_consumer()
     print("Disconnected from database and Kafka producer/consumer stopped.")
+    if httpx_client is not None:
+        await httpx_client.aclose()
+        httpx_client = None
+    print("Disconnected from the httpx_client")
 
 @app.get("/")
 async def read_root():
