@@ -1,20 +1,18 @@
 package com.community.users.authservice.application.service;
 
 import com.community.users.authservice.application.dto.UserDTO;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.stereotype.Service;
-import org.springframework.beans.factory.annotation.Autowired;
 import com.community.users.authservice.application.dto.UserLoggedInDTO;
+import com.community.users.authservice.domain.model.Role;
 import com.community.users.authservice.domain.model.User;
 import com.community.users.authservice.domain.repository.UserRepository;
 import com.community.users.authservice.infrastructure.security.JWTService;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.core.userdetails.UserDetails;
-import com.community.users.authservice.domain.model.Role;
-
 import java.util.Collections;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
@@ -23,9 +21,12 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final UserDetailsService userDetailsService;
 
-
     @Autowired
-    public AuthService(UserRepository userRepository, JWTService jwtService, PasswordEncoder passwordEncoder, UserDetailsService userDetailsService) {
+    public AuthService(
+            UserRepository userRepository,
+            JWTService jwtService,
+            PasswordEncoder passwordEncoder,
+            UserDetailsService userDetailsService) {
         this.userRepository = userRepository;
         this.jwtService = jwtService;
         this.passwordEncoder = passwordEncoder;
@@ -33,12 +34,12 @@ public class AuthService {
     }
 
     public UserLoggedInDTO userLogin(String email, String password) throws Exception {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new Exception("Invalid email or password"));
+        User user =
+                userRepository
+                        .findByEmail(email)
+                        .orElseThrow(() -> new Exception("Invalid email or password"));
 
-        // The User object itself should implement UserDetails for this to work seamlessly.
         if (passwordEncoder.matches(password, user.getPassword())) {
-            // generateToken expects UserDetails. If User implements UserDetails, we can pass it directly.
             String jwtToken = jwtService.generateToken(user);
             UserDTO userDTO = new UserDTO(user.getUsername());
 
@@ -47,7 +48,10 @@ public class AuthService {
                     .userId(user.getId())
                     .userName(userDTO)
                     .email(user.getEmail())
-                    .roles(user.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
+                    .roles(
+                            user.getRoles().stream()
+                                    .map(Role::name)
+                                    .collect(Collectors.toList())) // Corrected to Role::name
                     .build();
         } else {
             throw new Exception("Invalid email or password");
@@ -62,13 +66,8 @@ public class AuthService {
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
-        // Assuming Role "USER" exists in the database.
-        // A better approach would be to have a RoleRepository to fetch the Role object.
-        Role userRole = new Role();
-        userRole.setName("USER");
-        // If Role has an ID that needs to be set, it should be done here.
-
-        user.setRoles(Collections.singletonList(userRole));
+        user.setRoles(
+                Collections.singletonList(Role.USER)); // Corrected to use Role.USER enum constant
         return userRepository.save(user);
     }
 
@@ -83,17 +82,17 @@ public class AuthService {
                 throw new Exception("Invalid token");
             }
 
-            // The "security guard" flow: load the official record (UserDetails) from the directory (UserDetailsService)
-            // and validate the token against that official record.
-            User user = (User) userDetailsService.loadUserByUsername(username); // Cast to User
-            
+            User user = (User) userDetailsService.loadUserByUsername(username);
+
             if (jwtService.isTokenValid(token, user)) {
                 return user;
             } else {
                 throw new Exception("Invalid token");
             }
         } catch (Exception e) {
-            throw new Exception("Error validating token");
+            throw new Exception(
+                    "Error validating token: "
+                            + e.getMessage()); // Added message for better debugging
         }
     }
 }
