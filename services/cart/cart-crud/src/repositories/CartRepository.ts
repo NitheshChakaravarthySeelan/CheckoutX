@@ -1,6 +1,0 @@
-import type { Cart } from "../models/cart.js";
-
-export interface CartRepository {
-  findByUserId(userId: number): Promise<Cart | null>;
-  save(cart: Omit<Cart, "id"> | Cart): Promise<Cart>;
-}

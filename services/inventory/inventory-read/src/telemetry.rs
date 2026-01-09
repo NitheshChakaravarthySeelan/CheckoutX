@@ -1,6 +1,5 @@
 // services/inventory/inventory-read/src/telemetry.rs
 
-use actix_web::middleware::Logger;
 use metrics_exporter_prometheus::{PrometheusBuilder, PrometheusHandle};
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_subscriber::{EnvFilter, Registry};

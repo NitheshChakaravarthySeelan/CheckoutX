@@ -17,7 +17,7 @@ public class SpringMediator implements Mediator {
     }
 
     @Override
-    public <R, T> R send(T query) {
+    public <R, T> R send(T query, Class<R> returnType) {
         try {
             // Find all beans (handlers) in the Spring context
             String[] beanNames = applicationContext.getBeanDefinitionNames();
@@ -27,7 +27,8 @@ public class SpringMediator implements Mediator {
                 Method handleMethod = findHandleMethod(bean.getClass(), query.getClass());
                 if (handleMethod != null) {
                     // If found, invoke it and return the result
-                    return (R) handleMethod.invoke(bean, query);
+                    Object result = handleMethod.invoke(bean, query);
+                    return returnType.cast(result);
                 }
             }
             throw new IllegalStateException("No handler found for query: " + query.getClass().getName());

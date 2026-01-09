@@ -1,4 +1,10 @@
 packages:
-  - 'apps/*'
-  - 'services/*/*'
-  - 'shared/*'
+  - apps/*
+  - services/*/*
+  - shared/*
+
+onlyBuiltDependencies:
+  - grpc-tools
+  - protobufjs
+  - sharp
+  - unrs-resolver

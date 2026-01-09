@@ -1,5 +1,5 @@
 import type { Cart, CartDetails, CartItem } from "../models/cart.js";
-import type { CartRepository } from "../repositories/CartRepository.js";
+import type { ICartRepository } from "../repositories/ICartRepository.js";
 import type {
   ProductServiceAdapter,
   Product,
@@ -7,7 +7,7 @@ import type {
 
 export class CartService {
   constructor(
-    private cartRepository: CartRepository,
+    private cartRepository: ICartRepository,
     private productServiceAdapter: ProductServiceAdapter,
   ) {}
 
@@ -17,13 +17,7 @@ export class CartService {
       return existingCart;
     }
 
-    const newCart: Omit<Cart, "id"> = {
-      userId,
-      items: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    return this.cartRepository.save(newCart);
+    return this.cartRepository.createCart(userId);
   }
 
   async addItem(
@@ -35,7 +29,9 @@ export class CartService {
       throw new Error("Quantity must be positive.");
     }
 
-    const product = await this.productServiceAdapter.getProductById(productId);
+    const product = await this.productServiceAdapter.getProductById(
+      productId.toString(),
+    );
     if (!product) {
       throw new Error("Product not found.");
     }
@@ -67,9 +63,9 @@ export class CartService {
     // const totalPrice = await cartPricingService.calculateTotalPrice(cart.items);
 
     const enrichedItems = await Promise.all(
-      cart.items.map(async (item) => {
+      cart.items.map(async (item: CartItem) => {
         const product = await this.productServiceAdapter.getProductById(
-          item.productId,
+          item.productId.toString(),
         );
         return {
           ...item,
@@ -80,10 +76,17 @@ export class CartService {
       }),
     );
 
+    const totalPrice = enrichedItems.reduce((total, item) => {
+      if (item.price) {
+        return total + item.price * item.quantity;
+      }
+      return total;
+    }, 0);
+
     const cartDetails: CartDetails = {
       ...cart,
       items: enrichedItems,
-      totalPrice: 100, // TODO: This is a mock value. Integrate with cart-pricing service.
+      totalPrice,
     };
 
     return cartDetails;

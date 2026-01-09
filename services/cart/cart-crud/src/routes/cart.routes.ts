@@ -1,94 +1,115 @@
-import { Router } from "express"; // Import Router as value
-import type { Request, Response } from "express"; // Import Request and Response as types
-import { body, param } from "express-validator";
-import { validateRequest } from "../utils/validator.js";
-import type { CartService } from "../services/cart.service.js"; // Import CartService as type
+import { Router } from "express";
+import { CartService } from "../services/cart.service.js";
+import { z } from "zod";
+import { validate } from "../utils/validator.js";
 
-// Export a function that creates the router, allowing for dependency injection
-export const createCartRoutes = (cartService: CartService): Router => {
+export function createCartRoutes(cartService: CartService): Router {
   const router = Router();
 
-  router.get(
-    "/:userId",
-    param("userId").isInt().toInt(),
-    validateRequest,
-    async (req: Request, res: Response) => {
+  const cartItemSchema = z.object({
+    productId: z.number().int().positive(),
+    quantity: z.number().int().positive(),
+  });
+
+  // Get cart by user ID
+  router.get("/:userId", async (req, res, next) => {
+    try {
+      const userId = req.params.userId ? parseInt(req.params.userId) : NaN;
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid User ID" });
+      }
+      const cart = await cartService.getCart(userId);
+      if (cart) {
+        res.json(cart);
+      } else {
+        res.status(404).json({ message: "Cart not found" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  // Add item to cart
+  router.post(
+    "/:userId/items",
+    validate(cartItemSchema),
+    async (req, res, next) => {
       try {
-        const cart = await cartService.getCart(Number(req.params.userId));
-        if (!cart) {
-          return res
-            .status(404)
-            .json({ message: "Cart not found for this user." });
+        const userId = req.params.userId ? parseInt(req.params.userId) : NaN;
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: "Invalid User ID" });
         }
-        res.status(200).json(cart);
+        const item = req.body;
+        const updatedCart = await cartService.addItem(
+          userId,
+          item.productId,
+          item.quantity,
+        );
+        res.status(201).json(updatedCart);
       } catch (error) {
-        res.status(500).json({ message: "Internal Server Error" });
+        next(error);
       }
     },
   );
 
-  router.post(
-    "/:userId/items",
-    param("userId").isInt().toInt(),
-    body("productId").isInt().toInt(),
-    body("quantity").isInt({ gt: 0 }).toInt(),
-    validateRequest,
-    async (req: Request, res: Response) => {
-      const { userId } = req.params;
-      const { productId, quantity } = req.body;
+  // Update item quantity in cart
+  router.put(
+    "/:userId/items/:productId",
+    validate(cartItemSchema),
+    async (req, res, next) => {
       try {
-        const updatedCart = await cartService.addItem(
-          Number(userId),
+        const userId = req.params.userId ? parseInt(req.params.userId) : NaN;
+        const productId = req.params.productId
+          ? parseInt(req.params.productId)
+          : NaN;
+        const { quantity } = req.body;
+
+        if (isNaN(userId) || isNaN(productId)) {
+          return res
+            .status(400)
+            .json({ message: "Invalid User ID or Product ID" });
+        }
+
+        const updatedCart = await cartService.updateItemQuantity(
+          userId,
           productId,
           quantity,
         );
-        res.status(200).json(updatedCart);
+        if (updatedCart) {
+          res.json(updatedCart);
+        } else {
+          res.status(404).json({ message: "Cart or item not found" });
+        }
       } catch (error) {
-        res.status(500).json({ message: "Internal Server Error" });
+        next(error);
       }
     },
   );
 
-  router.put(
-    "/:userId/items/:productId",
-    param("userId").isInt().toInt(),
-    param("productId").isInt().toInt(),
-    body("quantity").isInt().toInt(),
-    validateRequest,
-    async (req: Request, res: Response) => {
-      const { userId, productId } = req.params;
-      const { quantity } = req.body;
-      try {
-        const updatedCart = await cartService.updateItemQuantity(
-          Number(userId),
-          Number(productId),
-          quantity,
-        );
-        res.status(200).json(updatedCart);
-      } catch (error) {
-        res.status(404).json({ message: (error as Error).message });
-      }
-    },
-  );
+  // Remove item from cart
+  router.delete("/:userId/items/:productId", async (req, res, next) => {
+    try {
+      const userId = req.params.userId ? parseInt(req.params.userId) : NaN;
+      const productId = req.params.productId
+        ? parseInt(req.params.productId)
+        : NaN;
 
-  router.delete(
-    "/:userId/items/:productId",
-    param("userId").isInt().toInt(),
-    param("productId").isInt().toInt(),
-    validateRequest,
-    async (req: Request, res: Response) => {
-      const { userId, productId } = req.params;
-      try {
-        const updatedCart = await cartService.removeItem(
-          Number(userId),
-          Number(productId),
-        );
-        res.status(200).json(updatedCart);
-      } catch (error) {
-        res.status(404).json({ message: (error as Error).message });
+      if (isNaN(userId) || isNaN(productId)) {
+        return res
+          .status(400)
+          .json({ message: "Invalid User ID or Product ID" });
       }
-    },
-  );
+
+      const updatedCart = await cartService.removeItem(userId, productId);
+      if (updatedCart) {
+        res.json(updatedCart);
+      } else {
+        res.status(404).json({ message: "Cart or item not found" });
+      }
+    } catch (error) {
+      next(error);
+    }
+  });
 
   return router;
-};
+}

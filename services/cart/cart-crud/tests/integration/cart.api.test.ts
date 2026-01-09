@@ -1,7 +1,8 @@
+import { jest } from "@jest/globals";
 import request from "supertest";
-import { createCartRoutes } from "../../src/routes/cart.routes"; // Import the function
-import { CartService } from "../../src/services/cart.service"; // Use type import
-import type { Cart } from "../../src/models/cart"; // Use type import
+import { createCartRoutes } from "../../src/routes/cart.routes.js"; // Import the function
+import { CartService } from "../../src/services/cart.service.js"; // Use type import
+import type { Cart } from "../../src/models/cart.js"; // Use type import
 import express from "express"; // Import express
 
 // --- Mocking CartService ---
@@ -46,7 +47,7 @@ describe("Cart API", () => {
     const expectedCart: Cart = {
       id: 1,
       userId,
-      items: [{ id: 1, ...newItem }],
+      items: [newItem],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -58,7 +59,7 @@ describe("Cart API", () => {
       .send(newItem);
 
     // Assert
-    expect(res.statusCode).toEqual(200);
+    expect(res.statusCode).toEqual(201);
     expect(res.body.userId).toEqual(userId);
     expect(res.body.items.length).toBe(1);
     expect(res.body.items[0].productId).toBe(101);
@@ -71,17 +72,17 @@ describe("Cart API", () => {
 
   it("should update an item quantity", async () => {
     // Arrange
-    const update = { quantity: 3 };
+    const update = { productId: 101, quantity: 3 };
     const existingCart: Cart = {
       id: 1,
       userId,
-      items: [{ id: 1, productId: 101, quantity: 1 }],
+      items: [{ productId: 101, quantity: 1 }],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     const updatedCart: Cart = {
       ...existingCart,
-      items: [{ id: 1, productId: 101, quantity: 3 }],
+      items: [{ productId: 101, quantity: 3 }],
     };
     mockCartService.updateItemQuantity.mockResolvedValue(updatedCart);
 
