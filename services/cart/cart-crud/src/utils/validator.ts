@@ -1,14 +1,12 @@
-import type { Request, Response, NextFunction } from "express"; // Import types
-import { validationResult } from "express-validator"; // Use ES module import
+import type { Request, Response, NextFunction } from "express";
+import type { ZodSchema } from "zod";
 
-export const validateRequest = (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  next();
-};
+export const validate =
+  (schema: ZodSchema) => (req: Request, res: Response, next: NextFunction) => {
+    try {
+      schema.parse(req.body);
+      next();
+    } catch (error: any) {
+      return res.status(400).json({ errors: error.errors });
+    }
+  };

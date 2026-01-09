@@ -1,79 +1,126 @@
-import type { Cart } from "../models/cart.js";
-import type { CartRepository } from "./CartRepository.js";
-import { dbPool } from "../utils/db.js";
+import type { ICartRepository } from "./ICartRepository.js";
+import type { Cart, CartItem } from "../models/cart.js";
+import { Pool } from "pg";
 
-export class PostgresCartRepository implements CartRepository {
-  async findByUserId(userId: number): Promise<Cart | null> {
-    const client = await dbPool.connect();
+export class PostgresCartRepository implements ICartRepository {
+  private pool: Pool;
 
-    try {
-      // SQL query to select the cart by userid
-      const result = await client.query(
-        "SELECT * FROM carts WHERE user_id = $1",
-        [userId],
-      );
-
-      if (result.rows.length === 0) {
-        return null;
-      }
-
-      const dbRow = result.rows[0];
-
-      const cart: Cart = {
-        id: dbRow.id,
-        userId: dbRow.user_id,
-        items: JSON.parse(dbRow.items),
-        createdAt: dbRow.created_at,
-        updatedAt: dbRow.updated_at,
-      };
-      return cart;
-    } catch (error) {
-      console.error("Error finding cart by userId:", error);
-      throw error;
-    } finally {
-      client.release();
-    }
+  constructor() {
+    this.pool = new Pool({
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_DATABASE,
+      password: process.env.DB_PASSWORD,
+      port: Number(process.env.DB_PORT),
+    });
   }
 
-  async save(cart: Omit<Cart, "id"> | Cart): Promise<Cart> {
-    const client = await dbPool.connect();
-
-    try {
-      const itemsJson = JSON.stringify(cart.items);
-      const query = `
-				INSERT INTO carts (user_id, items, created_at, updated_at)
-				VALUES ($1, $2, NOW(), NOW())
-				ON CONFLICT (user_id) DO UPDATE SET
-					items = EXCLUDED.items,
-					updated_at = NOW()
-				RETURNING *;
-				`;
-
-      const values = [cart.userId, itemsJson];
-      const result = await client.query(query, values);
-
-      if (result.rows.length === 0) {
-        throw new Error(
-          "Failed to save cart: Now row returned after insert/update.",
-        );
-      }
-
-      const dbRow = result.rows[0];
-
-      const savedCart: Cart = {
-        id: dbRow.id,
-        userId: dbRow.user_id,
-        items: JSON.parse(dbRow.items),
-        createdAt: dbRow.created_at,
-        updatedAt: dbRow.updated_at,
+  async findByUserId(userId: number): Promise<Cart | null> {
+    const result = await this.pool.query(
+      "SELECT * FROM carts WHERE user_id = $1",
+      [userId],
+    );
+    if (result.rows.length > 0) {
+      const row = result.rows[0];
+      return {
+        id: row.id,
+        userId: row.user_id,
+        items: row.items,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
       };
-
-      return savedCart;
-    } catch (error) {
-      console.error("Error saving cart:", error);
-      throw error;
-    } finally {
-      client.release();
     }
+    return null;
+  }
+
+  async createCart(userId: number): Promise<Cart> {
+    const result = await this.pool.query(
+      "INSERT INTO carts (user_id) VALUES ($1) RETURNING *",
+      [userId],
+    );
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      userId: row.user_id,
+      items: row.items,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  async updateCart(cart: Cart): Promise<Cart> {
+    const result = await this.pool.query(
+      "UPDATE carts SET items = $1, updated_at = NOW() WHERE id = $2 RETURNING *",
+      [cart.items, cart.id],
+    );
+    const row = result.rows[0];
+    return {
+      id: row.id,
+      userId: row.user_id,
+      items: row.items,
+      createdAt: row.created_at,
+      updatedAt: row.updatedAt,
+    };
+  }
+
+  async save(cart: Cart): Promise<Cart> {
+    return this.updateCart(cart);
+  }
+
+  async deleteCart(userId: number): Promise<void> {
+    await this.pool.query("DELETE FROM carts WHERE user_id = $1", [userId]);
+  }
+
+  async addItemToCart(userId: number, item: CartItem): Promise<Cart> {
+    let cart = await this.findByUserId(userId);
+    if (!cart) {
+      cart = await this.createCart(userId);
+    }
+
+    const existingItemIndex = cart.items.findIndex(
+      (i: CartItem) => i.productId === item.productId,
+    );
+    if (existingItemIndex > -1) {
+      cart.items[existingItemIndex]!.quantity += item.quantity;
+    } else {
+      cart.items.push(item);
+    }
+
+    return this.updateCart(cart);
+  }
+
+  async updateItemQuantity(
+    userId: number,
+    productId: number,
+    quantity: number,
+  ): Promise<Cart | null> {
+    let cart = await this.findByUserId(userId);
+    if (!cart) {
+      return null;
+    }
+
+    const existingItemIndex = cart.items.findIndex(
+      (i: CartItem) => i.productId === productId,
+    );
+    if (existingItemIndex > -1) {
+      cart.items[existingItemIndex]!.quantity = quantity;
+      return this.updateCart(cart);
+    }
+    return null;
+  }
+
+  async removeItemFromCart(
+    userId: number,
+    productId: number,
+  ): Promise<Cart | null> {
+    let cart = await this.findByUserId(userId);
+    if (!cart) {
+      return null;
+    }
+
+    cart.items = cart.items.filter(
+      (item: CartItem) => item.productId !== productId,
+    );
+    return this.updateCart(cart);
   }
 }

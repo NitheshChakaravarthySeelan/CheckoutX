@@ -1,11 +1,16 @@
-// This file is now primarily for documentation purposes, as TypeScript interfaces
-// do not exist at runtime. The actual implementation is what matters.
+import type { Cart, CartItem } from "../models/cart.js";
 
-/*
 export interface ICartRepository {
   findByUserId(userId: number): Promise<Cart | null>;
+  createCart(userId: number): Promise<Cart>;
+  updateCart(cart: Cart): Promise<Cart>;
   save(cart: Cart): Promise<Cart>;
-  clear(): Promise<void>;
+  deleteCart(userId: number): Promise<void>;
+  addItemToCart(userId: number, item: CartItem): Promise<Cart>;
+  updateItemQuantity(
+    userId: number,
+    productId: number,
+    quantity: number,
+  ): Promise<Cart | null>;
+  removeItemFromCart(userId: number, productId: number): Promise<Cart | null>;
 }
-*/
-module.exports = {};

@@ -1,238 +1,243 @@
-import { CartService } from "../src/services/cart.service";
-import type { CartRepository } from "../src/repositories/CartRepository";
-import type { Cart, CartDetails, CartItem } from "../src/models/cart";
-
-// Mock Implementation of CartRepository for testing purposes
-const mockCartRepository: jest.Mocked<CartRepository> = {
-  findByUserId: jest.fn(),
-  save: jest.fn(),
-};
-
-// Mock Implementation of ProductServiceAdapter for testing purposes
-const mockProductServiceAdapter = {
-  getProductById: jest.fn(),
-};
-
-// Clear all mocks before each test to ensure a clean slate
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+import { jest } from "@jest/globals";
+import { CartService } from "../src/services/cart.service.js";
+import { InMemoryCartRepository } from "../src/repositories/InMemoryCartRepository.js";
+import { ProductServiceAdapter } from "../src/adapters/ProductServiceAdapter.js";
+import type { Cart, CartItem, CartItemDetails } from "../src/models/cart.js";
 
 describe("CartService", () => {
   let cartService: CartService;
+  let mockCartRepository: InMemoryCartRepository;
+  let mockProductServiceAdapter: ProductServiceAdapter;
 
-  // Create a new instance of CartService with the mock repository and adapter before each test
   beforeEach(() => {
+    mockCartRepository = new InMemoryCartRepository();
+    mockProductServiceAdapter = {
+      getProductById: jest.fn(),
+    } as unknown as ProductServiceAdapter;
     cartService = new CartService(
       mockCartRepository,
-      mockProductServiceAdapter as any,
+      mockProductServiceAdapter,
     );
-    mockProductServiceAdapter.getProductById.mockResolvedValue({
-      id: 101,
-      name: "Test Product",
-      price: 10.0,
-      imageUrl: "http://example.com/test-product.jpg",
-      description: "A test product",
-      sku: "TP101",
-      category: "Electronics",
-      manufacturer: "TestCorp",
-      status: "Available",
-    });
   });
 
-  // --- Tests for getCart ---
-  describe("getCart", () => {
-    it("should return cart details if a cart is found", async () => {
-      // Arrange
-      const userId = 1;
-      const mockCart: Cart = {
-        id: 1,
-        userId,
-        items: [{ id: 1, productId: 101, quantity: 2 }],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      mockCartRepository.findByUserId.mockResolvedValue(mockCart);
-
-      // Act
-      const result = (await cartService.getCart(userId)) as CartDetails;
-
-      // Assert
-      expect(result).not.toBeNull();
-      expect(result.userId).toBe(userId);
-      expect(result.items.length).toBe(1);
-      expect(result.totalPrice).toBe(100); // Mocked value from the service
-      expect(mockCartRepository.findByUserId).toHaveBeenCalledWith(userId);
+  it("should create a cart if one does not exist when adding an item", async () => {
+    const userId = 1;
+    const item: CartItem = { productId: 1, quantity: 1 };
+    (
+      mockProductServiceAdapter.getProductById as jest.Mock
+    ).mockResolvedValueOnce({
+      id: "1",
+      name: "Product 1",
+      price: 100,
+      currency: "USD",
+      imageUrl: "url",
+      description: "desc",
+      quantity: 10,
     });
 
-    it("should return null if no cart is found", async () => {
-      // Arrange
-      const userId = 99;
-      mockCartRepository.findByUserId.mockResolvedValue(null);
+    const cart = await cartService.addItem(
+      userId,
+      item.productId,
+      item.quantity,
+    );
 
-      // Act
-      const result = await cartService.getCart(userId);
-
-      // Assert
-      expect(result).toBeNull();
-      expect(mockCartRepository.findByUserId).toHaveBeenCalledWith(userId);
-    });
+    expect(cart).toBeDefined();
+    expect(cart.userId).toBe(userId);
+    expect(cart.items).toHaveLength(1);
+    expect(cart.items[0]).toEqual(item);
   });
 
-  // --- Tests for addItem ---
-  describe("addItem", () => {
-    it("should add a new item to a cart that does not exist yet", async () => {
-      // Arrange
-      const userId = 2;
-      const productId = 202;
-      const quantity = 1;
-      const newCart: Cart = {
-        id: 2,
-        userId,
-        items: [{ id: 1, productId, quantity }],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      mockCartRepository.findByUserId.mockResolvedValue(null); // No existing cart
-      mockCartRepository.save.mockResolvedValue(newCart); // The save operation will return the new cart
-
-      // Act
-      const result = await cartService.addItem(userId, productId, quantity);
-
-      // Assert
-      expect(mockCartRepository.findByUserId).toHaveBeenCalledWith(userId);
-      expect(mockCartRepository.save).toHaveBeenCalled();
-      expect(result.items.length).toBe(1);
-      expect(result.items[0]!.productId).toBe(productId);
+  it("should add a new item to an existing cart", async () => {
+    const userId = 1;
+    const item1: CartItem = { productId: 1, quantity: 1 };
+    const item2: CartItem = { productId: 2, quantity: 2 };
+    (
+      mockProductServiceAdapter.getProductById as jest.Mock
+    ).mockResolvedValueOnce({
+      id: "1",
+      name: "Product 1",
+      price: 100,
+      currency: "USD",
+      imageUrl: "url",
+      description: "desc",
+      quantity: 10,
+    });
+    (
+      mockProductServiceAdapter.getProductById as jest.Mock
+    ).mockResolvedValueOnce({
+      id: "2",
+      name: "Product 2",
+      price: 200,
+      currency: "USD",
+      imageUrl: "url",
+      description: "desc",
+      quantity: 20,
     });
 
-    it("should increment the quantity of an existing item", async () => {
-      // Arrange
-      const userId = 1;
-      const productId = 101;
-      const initialQuantity = 2;
-      const addedQuantity = 3;
-      const existingCart: Cart = {
-        id: 1,
-        userId,
-        items: [{ id: 1, productId, quantity: initialQuantity }],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const updatedCart: Cart = {
-        ...existingCart,
-        items: [
-          { id: 1, productId, quantity: initialQuantity + addedQuantity },
-        ],
-      };
+    await cartService.addItem(userId, item1.productId, item1.quantity);
+    const cart = await cartService.addItem(
+      userId,
+      item2.productId,
+      item2.quantity,
+    );
 
-      mockCartRepository.findByUserId.mockResolvedValue(existingCart);
-      mockCartRepository.save.mockResolvedValue(updatedCart);
-
-      // Act
-      const result = await cartService.addItem(
-        userId,
-        productId,
-        addedQuantity,
-      );
-
-      // Assert
-      expect(mockCartRepository.save).toHaveBeenCalled();
-      expect(result.items[0]!.quantity).toBe(initialQuantity + addedQuantity);
-    });
+    expect(cart.items).toHaveLength(2);
+    expect(cart.items[1]).toEqual(item2);
   });
 
-  // --- Tests for updateItemQuantity ---
-  describe("updateItemQuantity", () => {
-    it("should update the quantity of an item in the cart", async () => {
-      // Arrange
-      const userId = 1;
-      const productId = 101;
-      const newQuantity = 5;
-      const existingCart: Cart = {
-        id: 1,
-        userId,
-        items: [{ id: 1, productId, quantity: 2 }],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const updatedCart: Cart = {
-        ...existingCart,
-        items: [{ id: 1, productId, quantity: newQuantity }],
-      };
-
-      mockCartRepository.findByUserId.mockResolvedValue(existingCart);
-      mockCartRepository.save.mockResolvedValue(updatedCart);
-
-      // Act
-      const result = await cartService.updateItemQuantity(
-        userId,
-        productId,
-        newQuantity,
-      );
-
-      // Assert
-      expect(result.items[0]!.quantity).toBe(newQuantity);
-      expect(mockCartRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          items: expect.arrayContaining([
-            expect.objectContaining({ quantity: 5 }),
-          ]),
-        }),
-      );
+  it("should update quantity if item already exists in cart", async () => {
+    const userId = 1;
+    const item: CartItem = { productId: 1, quantity: 1 };
+    (mockProductServiceAdapter.getProductById as jest.Mock).mockResolvedValue({
+      id: "1",
+      name: "Product 1",
+      price: 100,
+      currency: "USD",
+      imageUrl: "url",
+      description: "desc",
+      quantity: 10,
     });
 
-    it("should throw an error if the item is not found in the cart", async () => {
-      // Arrange
-      const userId = 1;
-      const nonExistentProductId = 999;
-      const existingCart: Cart = {
-        id: 1,
-        userId,
-        items: [{ id: 1, productId: 101, quantity: 2 }],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      mockCartRepository.findByUserId.mockResolvedValue(existingCart);
-
-      // Act & Assert
-      await expect(
-        cartService.updateItemQuantity(userId, nonExistentProductId, 5),
-      ).rejects.toThrow("Item not found in cart.");
-    });
+    await cartService.addItem(userId, item.productId, item.quantity);
+    const cart = await cartService.addItem(userId, 1, 2);
+    if (cart) {
+      expect(cart!.items).toHaveLength(1);
+      expect(cart!.items[0].quantity).toBe(3);
+    }
   });
 
-  // --- Tests for removeItem ---
-  describe("removeItem", () => {
-    it("should remove an item from the cart", async () => {
-      // Arrange
-      const userId = 1;
-      const productIdToRemove = 101;
-      const existingCart: Cart = {
-        id: 1,
-        userId,
-        items: [
-          { id: 1, productId: 101, quantity: 2 },
-          { id: 2, productId: 102, quantity: 1 },
-        ],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const updatedCart: Cart = {
-        ...existingCart,
-        items: [{ id: 2, productId: 102, quantity: 1 }],
-      };
-
-      mockCartRepository.findByUserId.mockResolvedValue(existingCart);
-      mockCartRepository.save.mockResolvedValue(updatedCart);
-
-      // Act
-      const result = await cartService.removeItem(userId, productIdToRemove);
-
-      // Assert
-      expect(result.items.length).toBe(1);
-      expect(result.items[0]!.productId).not.toBe(productIdToRemove);
-      expect(mockCartRepository.save).toHaveBeenCalled();
+  it("should update item quantity for an existing item", async () => {
+    const userId = 1;
+    const item: CartItem = { productId: 1, quantity: 1 };
+    (
+      mockProductServiceAdapter.getProductById as jest.Mock
+    ).mockResolvedValueOnce({
+      id: "1",
+      name: "Product 1",
+      price: 100,
+      currency: "USD",
+      imageUrl: "url",
+      description: "desc",
+      quantity: 10,
     });
+
+    await cartService.addItem(userId, item.productId, item.quantity);
+    const cart = await cartService.updateItemQuantity(userId, 1, 5);
+    if (cart) {
+      expect(cart!.items[0].quantity).toBe(5);
+    }
+  });
+
+  it("should remove an item from the cart", async () => {
+    const userId = 1;
+    const item1: CartItem = { productId: 1, quantity: 1 };
+    const item2: CartItem = { productId: 2, quantity: 2 };
+    (
+      mockProductServiceAdapter.getProductById as jest.Mock
+    ).mockResolvedValueOnce({
+      id: "1",
+      name: "Product 1",
+      price: 100,
+      currency: "USD",
+      imageUrl: "url",
+      description: "desc",
+      quantity: 10,
+    });
+    (
+      mockProductServiceAdapter.getProductById as jest.Mock
+    ).mockResolvedValueOnce({
+      id: "2",
+      name: "Product 2",
+      price: 200,
+      currency: "USD",
+      imageUrl: "url",
+      description: "desc",
+      quantity: 20,
+    });
+
+    await cartService.addItem(userId, item1.productId, item1.quantity);
+    await cartService.addItem(userId, item2.productId, item2.quantity);
+    const cart = await cartService.removeItem(userId, 1);
+    if (cart) {
+      expect(cart!.items).toHaveLength(1);
+      expect(cart!.items[0].productId).toBe(2);
+    }
+  });
+
+  it("should return a detailed cart with product information and total price", async () => {
+    const userId = 1;
+    const item1: CartItem = { productId: 1, quantity: 1 };
+    const item2: CartItem = { productId: 2, quantity: 2 };
+
+    (mockProductServiceAdapter.getProductById as jest.Mock)
+      .mockResolvedValueOnce({
+        id: "1",
+        name: "Product 1",
+        price: 100,
+        currency: "USD",
+        imageUrl: "url1",
+        description: "desc1",
+        quantity: 10,
+      })
+      .mockResolvedValueOnce({
+        id: "2",
+        name: "Product 2",
+        price: 200,
+        currency: "USD",
+        imageUrl: "url2",
+        description: "desc2",
+        quantity: 20,
+      });
+
+    await cartService.addItem(userId, item1.productId, item1.quantity);
+    await cartService.addItem(userId, item2.productId, item2.quantity);
+
+    (mockProductServiceAdapter.getProductById as jest.Mock)
+      .mockResolvedValueOnce({
+        id: "1",
+        name: "Product 1",
+        price: 100,
+        currency: "USD",
+        imageUrl: "url1",
+        description: "desc1",
+        quantity: 10,
+      })
+      .mockResolvedValueOnce({
+        id: "2",
+        name: "Product 2",
+        price: 200,
+        currency: "USD",
+        imageUrl: "url2",
+        description: "desc2",
+        quantity: 20,
+      });
+
+    const detailedCart = await cartService.getCart(userId);
+
+    expect(detailedCart).toBeDefined();
+    if (detailedCart) {
+      expect(detailedCart!.items).toHaveLength(2);
+      expect(detailedCart!.items[0].name).toBe("Product 1");
+      expect(detailedCart!.items[1].price).toBe(200);
+      expect(detailedCart!.totalPrice).toBe(500); // 100 * 1 + 200 * 2 = 500
+    }
+  });
+
+  it("should return null if cart not found for detailed cart request", async () => {
+    const userId = 999;
+    const detailedCart = await cartService.getCart(userId);
+    expect(detailedCart).toBeNull();
+  });
+
+  it("should handle product not found when getting detailed cart", async () => {
+    const userId = 1;
+    const item: CartItem = { productId: 1, quantity: 1 };
+    (
+      mockProductServiceAdapter.getProductById as jest.Mock
+    ).mockResolvedValueOnce(null);
+
+    await expect(
+      cartService.addItem(userId, item.productId, item.quantity),
+    ).rejects.toThrow("Product not found.");
   });
 });

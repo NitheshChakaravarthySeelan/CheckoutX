@@ -4,6 +4,7 @@ import * as client from "prom-client";
 import { CartService } from "./services/cart.service.js";
 import { PostgresCartRepository } from "./repositories/PostgresCartRepository.js";
 import { ProductServiceAdapter } from "./adapters/ProductServiceAdapter.js";
+import config from "./config/index.js";
 
 const app: express.Application = express(); // Explicitly type app
 
@@ -24,7 +25,9 @@ client.collectDefaultMetrics();
 
 // Instantiate dependencies
 const cartRepository = new PostgresCartRepository();
-const productServiceAdapter = new ProductServiceAdapter();
+const productServiceAdapter = new ProductServiceAdapter(
+  config.productServiceUrl,
+);
 export const cartService = new CartService(
   cartRepository,
   productServiceAdapter,

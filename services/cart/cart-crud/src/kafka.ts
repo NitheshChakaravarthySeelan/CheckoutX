@@ -1,150 +1,102 @@
-import { Kafka } from "kafkajs";
-import type { Consumer, Producer } from "kafkajs";
+import { Kafka, type EachMessagePayload } from "kafkajs";
 import { CartService } from "./services/cart.service.js";
-
-// --- Event Interfaces (Matching Java DTOs) ---
-interface OrderCreatedEvent {
-  orderId: string; // UUID from Java maps to string in TS
-  userId: string; // UUID from Java maps to string in TS
-  totalAmount: number; // BigDecimal from Java maps to number in TS
-  timestamp: string; // Instant from Java maps to string in TS
-  type: string; // Event type
-}
-
-interface CartClearedEvent {
-  orderId: string;
-  userId: string;
-  timestamp: string;
-  type: string; // Event type
-}
-
-interface CartClearanceFailedEvent {
-  orderId: string;
-  userId: string;
-  reason: string;
-  timestamp: string;
-  type: string; // Event type
-}
-// --- End Event Interfaces ---
+import { z } from "zod";
 
 const kafka = new Kafka({
-  clientId: "cart-crud-service",
-  brokers: [process.env.KAFKA_BOOTSTRAP_SERVERS || "localhost:29092"],
+  clientId: "cart-service",
+  brokers: (process.env.KAFKA_BOOTSTRAP_SERVERS || "localhost:9092").split(","),
 });
 
-const consumer: Consumer = kafka.consumer({ groupId: "cart-crud-group" });
-const producer: Producer = kafka.producer();
+const producer = kafka.producer();
+const consumer = kafka.consumer({ groupId: "cart-group" });
 
-export const initKafka = async (cartService: CartService) => {
-  if (process.env.ENABLE_KAFKA !== "true") {
-    console.warn("KAFKA_BOOTSTRAP_SERVERS is not set or ENABLE_KAFKA is not 'true'. Skipping Kafka initialization.");
-    return;
-  }
+// Define schemas for Kafka event messages
+const OrderCreatedEventSchema = z.object({
+  orderId: z.string().uuid(),
+  userId: z.string().uuid(),
+  items: z.array(
+    z.object({
+      productId: z.string(),
+      quantity: z.number().int().positive(),
+      price: z.number().positive(),
+    }),
+  ),
+  totalPrice: z.number().positive(),
+  timestamp: z.string().datetime(),
+});
 
-  await producer.connect();
-  await consumer.connect();
+type OrderCreatedEvent = z.infer<typeof OrderCreatedEventSchema>;
 
-  await consumer.subscribe({
-    topic: "checkout.checkout-events", // Changed to central event topic
-    fromBeginning: false, // Start consuming from new messages by default
-  });
+export async function initKafka(cartService: CartService) {
+  if (process.env.ENABLE_KAFKA === "true") {
+    await producer.connect();
+    await consumer.connect();
 
-  await consumer.run({
-    eachMessage: async ({ topic, partition, message }) => {
-      if (!message.value) {
-        console.warn("Received null message from Kafka");
-        return;
-      }
+    // Subscribe to topics
+    await consumer.subscribe({ topic: "order-created", fromBeginning: true });
 
-      let payload: any;
-      try {
-        payload = JSON.parse(message.value.toString());
-      } catch (error) {
-        console.error(`Failed to parse message value as JSON: ${error}`);
-        return;
-      }
-
-      console.log(
-        `Received event of type: ${payload.type} for order: ${
-          payload.orderId || "N/A"
-        }`
-      );
-
-      switch (payload.type) {
-        case "OrderCreatedEvent": // Handle OrderCreatedEvent
-          const orderCreatedEvent = payload as OrderCreatedEvent; // Type assertion
-          try {
-            // Validate UUIDs
-            if (
-              !orderCreatedEvent.orderId ||
-              typeof orderCreatedEvent.orderId !== "string"
-            ) {
-              throw new Error("Invalid or missing orderId in OrderCreatedEvent.");
-            }
-            if (
-              !orderCreatedEvent.userId ||
-              typeof orderCreatedEvent.userId !== "string"
-            ) {
-              throw new Error("Invalid or missing userId in OrderCreatedEvent.");
-            }
-
-            await cartService.clearCartByUserId(orderCreatedEvent.userId);
-
-            const cartClearedEvent: CartClearedEvent = {
-              orderId: orderCreatedEvent.orderId,
-              userId: orderCreatedEvent.userId,
-              timestamp: new Date().toISOString(), // Use ISO string for consistency with Java Instant
-              type: "CartClearedEvent",
-            };
-
-            await producer.send({
-              topic: "checkout.checkout-events",
-              messages: [{ value: JSON.stringify(cartClearedEvent) }],
-            });
-            console.log(
-              `CartClearedEvent sent for order: ${orderCreatedEvent.orderId} and user: ${orderCreatedEvent.userId}`
-            );
-          } catch (error) {
-            console.error(
-              `Failed to process OrderCreatedEvent for order ${orderCreatedEvent.orderId}, user ${orderCreatedEvent.userId}: ${error}`
-            );
-
-            const cartClearanceFailedEvent: CartClearanceFailedEvent = {
-              orderId: orderCreatedEvent.orderId,
-              userId: orderCreatedEvent.userId,
-              reason: error instanceof Error ? error.message : "Unknown error",
-              timestamp: new Date().toISOString(),
-              type: "CartClearanceFailedEvent",
-            };
-            await producer.send({
-              topic: "checkout.checkout-events",
-              messages: [
-                { value: JSON.stringify(cartClearanceFailedEvent) },
-              ],
-            });
-          }
-          break;
-        case "OrderCreationFailedEvent": // Optional: handle if an order fails to be created
-          // This service might need to react if the order creation failed, e.g., to revert some cart state
+    await consumer.run({
+      eachMessage: async ({
+        topic,
+        partition,
+        message,
+      }: EachMessagePayload) => {
+        if (!message.value) {
           console.warn(
-            `OrderCreationFailedEvent received for order: ${
-              payload.orderId || "N/A"
-            }. No action taken by cart-crud.`
+            `Received null or undefined message value for topic ${topic}`,
           );
-          break;
-        // Add other event handlers here if needed
-        default:
-          console.warn(`Unknown event type received: ${payload.type}`);
-      }
-    },
-  });
-};
+          return;
+        }
 
-export const disconnectKafka = async () => {
-  if (process.env.ENABLE_KAFKA !== "true") {
-    console.log("Kafka was not initialized. Skipping disconnection.");
-    return;
+        const stringValue = message.value.toString();
+
+        try {
+          switch (topic) {
+            case "order-created":
+              const event: OrderCreatedEvent = OrderCreatedEventSchema.parse(
+                JSON.parse(stringValue),
+              );
+              console.log(`Received OrderCreatedEvent:`, event);
+              // Deduct product quantities from carts or handle as needed
+              // For a cart service, this might involve clearing the cart for the user
+              // cartService.clearCart(event.userId); // Example action
+              break;
+            default:
+              console.log(`Received message on topic ${topic}: ${stringValue}`);
+          }
+        } catch (error) {
+          console.error(
+            `Error processing Kafka message on topic ${topic}:`,
+            error,
+          );
+          // Potentially move to a dead-letter queue or log for manual inspection
+        }
+      },
+    });
+    console.log("Kafka producer and consumer connected and subscribed.");
+  } else {
+    console.log("Kafka is disabled. Set ENABLE_KAFKA=true to enable.");
   }
-  await consumer.disconnect();
+}
+
+export async function disconnectKafka() {
   await producer.disconnect();
-};
+  await consumer.disconnect();
+  console.log("Kafka producer and consumer disconnected.");
+}
+
+export async function sendKafkaMessage(topic: string, message: object) {
+  if (process.env.ENABLE_KAFKA === "true") {
+    try {
+      await producer.send({
+        topic,
+        messages: [{ value: JSON.stringify(message) }],
+      });
+      console.log(`Message sent to topic ${topic}`);
+    } catch (error) {
+      console.error(`Error sending message to Kafka topic ${topic}:`, error);
+    }
+  } else {
+    console.log(`Kafka is disabled. Message to topic ${topic} was not sent.`);
+  }
+}

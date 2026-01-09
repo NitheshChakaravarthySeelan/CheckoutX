@@ -7,5 +7,5 @@ use uuid::Uuid;
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Inventory {
     pub product_id: Uuid,
-    pub quantity_available: u32,
+    pub quantity_available: i32,
 }

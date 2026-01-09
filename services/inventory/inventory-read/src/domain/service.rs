@@ -5,6 +5,7 @@ use sqlx::{PgPool, Error};
 use uuid::Uuid;
 use crate::domain::model::Inventory;
 
+#[derive(Debug, Clone)] // Added Debug trait
 pub struct InventoryService {
     pool: PgPool,
 }
