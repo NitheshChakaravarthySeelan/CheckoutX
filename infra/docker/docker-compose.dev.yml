@@ -86,39 +86,39 @@ services:
       - JWT_SECRET=your-super-secret-key # CHANGE THIS IN PRODUCTION
       - JWT_EXPIRES_IN=1h
 
-  intent-parser:
-    build:
-      context: ../../services/ai/intent-parser
-      dockerfile: Dockerfile
-    container_name: intent_parser_dev
-    ports:
-      - "8086:8080" # Maps to 8086 on host to avoid conflict with payment-gateway's suggested 8086
-    environment:
-      - GOOGLE_API_KEY=${GOOGLE_API_KEY} # User must provide this env var
-      - PORT=8080 # Internal port for the FastAPI app
-
-  plan-generator:
-    build:
-      context: ../../services/ai/plan-generator
-      dockerfile: Dockerfile
-    container_name: plan_generator_dev
-    ports:
-      - "8087:8080" # Maps to 8087 on host
-    environment:
-      - PORT=8080 # Internal port for the FastAPI app
-
-  plan-executor:
-    build:
-      context: ../../services/ai/plan-executor
-      dockerfile: Dockerfile
-    container_name: plan_executor_dev
-    ports:
-      - "8088:8080" # Maps to 8088 on host
-    environment:
-      - PORT=8080 # Internal port for the FastAPI app
-    depends_on:
-      - kafka # Plan Executor will eventually send Kafka commands
-      - checkout-orchestrator # To send commands to it
+#  intent-parser:
+#    build:
+#      context: ../../services/ai/intent-parser
+#      dockerfile: Dockerfile
+#    container_name: intent_parser_dev
+#    ports:
+#      - "8086:8080" # Maps to 8086 on host to avoid conflict with payment-gateway's suggested 8086
+#    environment:
+#      - GOOGLE_API_KEY=${GOOGLE_API_KEY} # User must provide this env var
+#      - PORT=8080 # Internal port for the FastAPI app
+#
+#  plan-generator:
+#    build:
+#      context: ../../services/ai/plan-generator
+#      dockerfile: Dockerfile
+#    container_name: plan_generator_dev
+#    ports:
+#      - "8087:8080" # Maps to 8087 on host
+#    environment:
+#      - PORT=8080 # Internal port for the FastAPI app
+#
+#  plan-executor:
+#    build:
+#      context: ../../services/ai/plan-executor
+#      dockerfile: Dockerfile
+#    container_name: plan_executor_dev
+#    ports:
+#      - "8088:8080" # Maps to 8088 on host
+#    environment:
+#      - PORT=8080 # Internal port for the FastAPI app
+#    depends_on:
+#      - kafka # Plan Executor will eventually send Kafka commands
+#      - checkout-orchestrator # To send commands to it
 
   checkout-orchestrator:
     build:
@@ -146,7 +146,7 @@ services:
       - auth-service
       - product-read
       - cart-crud
-      - intent-parser # Depends on intent-parser
+      # - intent-parser # Depends on intent-parser
     ports:
       - "3000:3000"
     environment:

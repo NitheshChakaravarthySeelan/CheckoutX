@@ -1,9 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { cookies } from "next/headers";
+import { AuthGrpcClient } from "./lib/grpc/auth.client"; // Import AuthGrpcClient
 
 export const config = {
   matcher: ["/api/products/:path*", "/api/orders/:path*"],
 };
+
+// Instantiate AuthGrpcClient
+const authGrpcClient = new AuthGrpcClient(
+  process.env.AUTH_SERVICE_GRPC_URL || "localhost:50051",
+);
 
 export async function middleware(request: NextRequest) {
   const jwtToken = request.cookies.get("jwtToken")?.value;
@@ -12,35 +17,24 @@ export async function middleware(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const options = {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${jwtToken}`,
-    },
-  };
-
   try {
-    const response = await fetch(
-      `${process.env.AUTH_SERVICE_URL}/api/auth/validate`,
-      options,
-    );
+    const validationResult = await authGrpcClient.validateToken(jwtToken);
 
-    if (response.status != 200) {
+    if (!validationResult.isValid) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await response.json();
     const newHeader = new Headers(request.headers);
-    newHeader.set("X-User_ID", user.id);
-    newHeader.set("X-User-Name", user.name);
-    newHeader.set("X-User-Roles", user.roles.join(","));
+    newHeader.set("X-User-ID", validationResult.userId);
+    newHeader.set("X-User-Name", validationResult.userName);
+    newHeader.set("X-User-Roles", validationResult.roles.join(","));
     return NextResponse.next({
       request: {
         headers: newHeader,
       },
     });
   } catch (error) {
+    console.error("Authentication gRPC error:", error);
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }

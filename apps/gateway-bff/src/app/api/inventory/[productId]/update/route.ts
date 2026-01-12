@@ -3,10 +3,11 @@ import { proxy } from "@/lib/httpResponse";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { productId: string } },
+  context: { params: Promise<{ productId: string }> },
 ) {
   try {
-    const { productId } = params;
+    const awaitedParams = await context.params;
+    const { productId } = awaitedParams;
     const body = await request.json();
     const option = {
       method: "POST",

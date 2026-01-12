@@ -4,11 +4,15 @@
   "description": "",
   "main": "index.js",
   "type": "module",
+  "imports": {
+    "#proto/*": "./dist/proto/*"
+  },
   "scripts": {
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "proto:gen": "grpc_tools_node_protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/proto --ts_proto_opt=esModuleInterop=true,forceLong=String,useEnumNames=true,outputServices=grpc-js,importSuffix=.js,useProtobufjs=false,outputJsonMethods=true --proto_path=../../../shared/proto ../../../shared/proto/cart.proto ../../../shared/proto/product.proto ../../../shared/proto/product_read_service.proto ../../../shared/proto/inventory.proto"
   },
   "keywords": [],
   "author": "",
@@ -23,7 +27,11 @@
     "kafkajs": "^2.2.4",
     "pg": "^8.16.3",
     "prom-client": "^15.1.2",
-    "zod": "^4.1.12"
+    "zod": "^4.1.12",
+    "@grpc/grpc-js": "^1.10.0",
+    "@grpc/proto-loader": "^0.1.0",
+    "long": "^5.2.3",
+    "protobufjs": "^7.3.0"
   },
   "devDependencies": {
     "@opentelemetry/auto-instrumentations-node": "^0.67.0",
@@ -39,6 +47,8 @@
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "ts-proto": "^1.168.0",
+    "grpc-tools": "^1.12.4"
   }
 }

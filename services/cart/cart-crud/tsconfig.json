@@ -4,6 +4,12 @@
     // File Layout
     "rootDir": "./src",
     "outDir": "./dist",
+    "baseUrl": ".",
+    "paths": {
+      "#proto/*": ["./src/proto/*"],
+      "protobufjs/minimal": ["./node_modules/protobufjs/minimal"],
+      "long": ["./node_modules/long"]
+    },
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
@@ -11,7 +17,7 @@
     "moduleResolution": "NodeNext",
     "target": "esnext",
     "types": ["node", "jest"],
-    "lib": ["esnext"],
+    "typeRoots": ["./node_modules/@types", "./src/proto"],
 
     // Other Outputs
     "sourceMap": true,

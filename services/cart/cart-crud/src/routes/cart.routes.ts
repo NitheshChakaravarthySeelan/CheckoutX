@@ -7,18 +7,18 @@ export function createCartRoutes(cartService: CartService): Router {
   const router = Router();
 
   const cartItemSchema = z.object({
-    productId: z.number().int().positive(),
+    productId: z.string(),
     quantity: z.number().int().positive(),
   });
 
   // Get cart by user ID
   router.get("/:userId", async (req, res, next) => {
     try {
-      const userId = req.params.userId ? parseInt(req.params.userId) : NaN;
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid User ID" });
+      const userId = req.params.userId; // userId is string now. Convert to number for existing service
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
       }
-      const cart = await cartService.getCart(userId);
+      const cart = await cartService.getCart(Number(userId));
       if (cart) {
         res.json(cart);
       } else {
@@ -35,13 +35,13 @@ export function createCartRoutes(cartService: CartService): Router {
     validate(cartItemSchema),
     async (req, res, next) => {
       try {
-        const userId = req.params.userId ? parseInt(req.params.userId) : NaN;
-        if (isNaN(userId)) {
-          return res.status(400).json({ message: "Invalid User ID" });
+        const userId = req.params.userId; // userId is string now
+        if (!userId) {
+          return res.status(400).json({ message: "User ID is required" });
         }
         const item = req.body;
         const updatedCart = await cartService.addItem(
-          userId,
+          Number(userId), // Convert to number for existing service
           item.productId,
           item.quantity,
         );
@@ -55,23 +55,21 @@ export function createCartRoutes(cartService: CartService): Router {
   // Update item quantity in cart
   router.put(
     "/:userId/items/:productId",
-    validate(cartItemSchema),
+    validate(cartItemSchema), // cartItemSchema only validates quantity from body here
     async (req, res, next) => {
       try {
-        const userId = req.params.userId ? parseInt(req.params.userId) : NaN;
-        const productId = req.params.productId
-          ? parseInt(req.params.productId)
-          : NaN;
+        const userId = req.params.userId; // userId is string
+        const productId = req.params.productId; // productId is string
         const { quantity } = req.body;
 
-        if (isNaN(userId) || isNaN(productId)) {
+        if (!userId || !productId) {
           return res
             .status(400)
-            .json({ message: "Invalid User ID or Product ID" });
+            .json({ message: "User ID or Product ID is required" });
         }
 
         const updatedCart = await cartService.updateItemQuantity(
-          userId,
+          Number(userId), // Convert to number for existing service
           productId,
           quantity,
         );
@@ -89,18 +87,19 @@ export function createCartRoutes(cartService: CartService): Router {
   // Remove item from cart
   router.delete("/:userId/items/:productId", async (req, res, next) => {
     try {
-      const userId = req.params.userId ? parseInt(req.params.userId) : NaN;
-      const productId = req.params.productId
-        ? parseInt(req.params.productId)
-        : NaN;
+      const userId = req.params.userId; // userId is string
+      const productId = req.params.productId; // productId is string
 
-      if (isNaN(userId) || isNaN(productId)) {
+      if (!userId || !productId) {
         return res
           .status(400)
-          .json({ message: "Invalid User ID or Product ID" });
+          .json({ message: "User ID or Product ID is required" });
       }
 
-      const updatedCart = await cartService.removeItem(userId, productId);
+      const updatedCart = await cartService.removeItem(
+        Number(userId), // Convert to number for existing service
+        productId,
+      );
       if (updatedCart) {
         res.json(updatedCart);
       } else {

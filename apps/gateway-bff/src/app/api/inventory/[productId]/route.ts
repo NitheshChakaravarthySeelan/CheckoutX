@@ -1,26 +1,34 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { proxy } from "@/lib/httpResponse";
+// import { proxy } from "@/lib/httpResponse"; // No longer needed
+import { InventoryGrpcClient } from "@/lib/grpc/inventory.client";
+
+// Instantiate InventoryGrpcClient
+const inventoryGrpcClient = new InventoryGrpcClient(
+  process.env.INVENTORY_GRPC_URL || "localhost:50053",
+);
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } },
+  context: { params: Promise<{ productId: string }> },
 ) {
   try {
-    const { productId } = params;
-    const option = {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-    const response = await proxy(
-      `${process.env.INVENTORY_READ_SERVICE_URL}/${productId}`,
-      option,
+    const awaitedParams = await context.params;
+    const { productId } = awaitedParams;
+    // Assuming a basic stock check for quantity 1 for this GET endpoint
+    const quantity = parseInt(
+      request.nextUrl.searchParams.get("quantity") || "1",
     );
-    return response;
+
+    const response = await inventoryGrpcClient.checkStock(productId, quantity); // Call gRPC service
+
+    return NextResponse.json(response);
   } catch (error: Error | unknown) {
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : "Something went wrong",
-    });
+    console.error("Inventory gRPC error:", error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Something went wrong",
+      },
+      { status: 500 },
+    );
   }
 }

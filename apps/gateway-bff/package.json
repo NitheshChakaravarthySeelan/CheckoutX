@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
-    "build:proto": "make generate-proto"
+    "build:proto": "make generate-proto",
+    "proto:gen": "grpc_tools_node_protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/proto --ts_proto_opt=esModuleInterop=true,forceLong=String,useEnumNames=true,outputServices=grpc-js,useProtobufjs=false,outputJsonMethods=true --proto_path=../../shared/proto ../../shared/proto/auth_service.proto ../../shared/proto/product.proto ../../shared/proto/product_read_service.proto ../../shared/proto/inventory.proto ../../shared/proto/cart.proto ../../shared/proto/cart_snapshot_service.proto"
   },
   "dependencies": {
     "@opentelemetry/api": "^1.9.0",
@@ -19,7 +20,11 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "kafkajs": "^2.2.4",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "@grpc/grpc-js": "^1.10.0",
+    "@grpc/proto-loader": "^0.1.0",
+    "long": "^5.2.3",
+    "protobufjs": "^7.3.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -36,6 +41,8 @@
     "jest-environment-jsdom": "^30.2.0",
     "typescript": "^5",
     "supertest": "^6.3.3",
-    "@types/supertest": "^2.0.12"
+    "@types/supertest": "^2.0.12",
+    "ts-proto": "^1.168.0",
+    "grpc-tools": "^1.12.4"
   }
 }
