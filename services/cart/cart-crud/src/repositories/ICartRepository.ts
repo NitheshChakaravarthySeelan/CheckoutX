@@ -9,8 +9,8 @@ export interface ICartRepository {
   addItemToCart(userId: number, item: CartItem): Promise<Cart>;
   updateItemQuantity(
     userId: number,
-    productId: number,
+    productId: string,
     quantity: number,
   ): Promise<Cart | null>;
-  removeItemFromCart(userId: number, productId: number): Promise<Cart | null>;
+  removeItemFromCart(userId: number, productId: string): Promise<Cart | null>;
 }

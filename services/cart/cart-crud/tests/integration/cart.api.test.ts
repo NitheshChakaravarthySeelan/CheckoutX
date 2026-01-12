@@ -43,7 +43,7 @@ describe("Cart API", () => {
 
   it("should add an item to the cart", async () => {
     // Arrange
-    const newItem = { productId: 101, quantity: 1 };
+    const newItem = { productId: "101", quantity: 1 };
     const expectedCart: Cart = {
       id: 1,
       userId,
@@ -62,7 +62,7 @@ describe("Cart API", () => {
     expect(res.statusCode).toEqual(201);
     expect(res.body.userId).toEqual(userId);
     expect(res.body.items.length).toBe(1);
-    expect(res.body.items[0].productId).toBe(101);
+    expect(res.body.items[0].productId).toBe("101");
     expect(mockCartService.addItem).toHaveBeenCalledWith(
       userId,
       newItem.productId,
@@ -72,17 +72,17 @@ describe("Cart API", () => {
 
   it("should update an item quantity", async () => {
     // Arrange
-    const update = { productId: 101, quantity: 3 };
+    const update = { productId: "101", quantity: 3 };
     const existingCart: Cart = {
       id: 1,
       userId,
-      items: [{ productId: 101, quantity: 1 }],
+      items: [{ productId: "101", quantity: 1 }],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     const updatedCart: Cart = {
       ...existingCart,
-      items: [{ productId: 101, quantity: 3 }],
+      items: [{ productId: "101", quantity: 3 }],
     };
     mockCartService.updateItemQuantity.mockResolvedValue(updatedCart);
 
@@ -93,11 +93,11 @@ describe("Cart API", () => {
 
     // Assert
     expect(res.statusCode).toEqual(200);
-    const item = res.body.items.find((i: any) => i.productId === 101);
+    const item = res.body.items.find((i: any) => i.productId === "101");
     expect(item.quantity).toEqual(3);
     expect(mockCartService.updateItemQuantity).toHaveBeenCalledWith(
       userId,
-      101,
+      "101",
       update.quantity,
     );
   });
@@ -107,7 +107,7 @@ describe("Cart API", () => {
     const existingCart: Cart = {
       id: 1,
       userId,
-      items: [{ id: 1, productId: 101, quantity: 1 }],
+      items: [{ id: 1, productId: "101", quantity: 1 }],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -120,6 +120,6 @@ describe("Cart API", () => {
     // Assert
     expect(res.statusCode).toEqual(200);
     expect(res.body.items.length).toBe(0);
-    expect(mockCartService.removeItem).toHaveBeenCalledWith(userId, 101);
+    expect(mockCartService.removeItem).toHaveBeenCalledWith(userId, "101");
   });
 });

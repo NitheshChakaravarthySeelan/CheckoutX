@@ -1,23 +1,36 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { proxy } from "@/lib/httpResponse";
+import { proxy } from "@/lib/httpResponse"; // Keep proxy for POST for now
+import { ProductReadGrpcClient } from "@/lib/grpc/product-read.client";
+import * as grpc from "@grpc/grpc-js"; // Import grpc
+
+// Instantiate ProductReadGrpcClient
+const productReadGrpcClient = new ProductReadGrpcClient(
+  process.env.PRODUCT_READ_GRPC_URL || "localhost:50052",
+);
 
 export async function GET(request: NextRequest) {
   try {
-    const option = {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    };
-    const response = await proxy(
-      `${process.env.PRODUCT_READ_SERVICE_URL}`,
-      option,
-    );
-    return response;
+    const userId = request.headers.get("X-User-ID");
+    const userName = request.headers.get("X-User-Name");
+    const userRoles = request.headers.get("X-User-Roles");
+
+    const metadata = new grpc.Metadata();
+    if (userId) metadata.add("x-user-id", userId);
+    if (userName) metadata.add("x-user-name", userName);
+    if (userRoles) metadata.add("x-user-roles", userRoles);
+
+    // Pass metadata to the gRPC call
+    const response = await productReadGrpcClient.getAllProducts({}, metadata); // Call gRPC service
+
+    return NextResponse.json(response.products); // Assuming response contains a 'products' array
   } catch (error: Error | unknown) {
-    return NextResponse.json({
-      error: error instanceof Error ? error.message : "Something went wrong",
-    });
+    console.error("ProductRead gRPC error:", error);
+    return NextResponse.json(
+      {
+        error: error instanceof Error ? error.message : "Something went wrong",
+      },
+      { status: 500 },
+    );
   }
 }
 

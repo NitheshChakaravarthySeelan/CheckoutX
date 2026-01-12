@@ -3,10 +3,11 @@ import { proxy } from "@/lib/httpResponse";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orderId: string } },
+  context: { params: Promise<{ orderId: string }> },
 ) {
   try {
-    const { orderId } = params;
+    const awaitedParams = await context.params;
+    const { orderId } = awaitedParams;
     const option = {
       method: "GET",
       headers: {

@@ -1,13 +1,11 @@
 export interface CartItem {
-  id?: number;
-  productId: number;
+  // id?: number; // Removed as not in proto, and not a primary key for an item in a cart
+  productId: string; // Changed to string to match proto
   quantity: number;
-}
-
-export interface CartItemDetails extends CartItem {
-  name: string | undefined;
-  price: number | undefined;
-  image: string | undefined;
+  // Denormalized product data, matching cart.proto
+  name: string;
+  priceCents: number;
+  imageUrl: string;
 }
 
 export interface Cart {
@@ -18,7 +16,10 @@ export interface Cart {
   updatedAt: Date;
 }
 
+// CartDetails can now just extend Cart, as CartItem is already enriched
 export interface CartDetails extends Cart {
-  items: CartItemDetails[];
-  totalPrice: number;
+  totalPriceCents: number; // Renamed to match cents convention
+  subtotalCents: number;
+  totalDiscountCents: number;
+  totalTaxCents: number;
 }

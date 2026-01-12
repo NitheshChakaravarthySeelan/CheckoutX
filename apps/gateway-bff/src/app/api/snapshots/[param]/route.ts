@@ -3,10 +3,11 @@ import { proxy } from "@/lib/httpResponse";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { param: string } },
+  context: { params: Promise<{ param: string }> },
 ) {
   try {
-    const userId = params.param; // Here 'param' is expected to be userId
+    const awaitedParams = await context.params;
+    const userId = awaitedParams.param; // Here 'param' is expected to be userId
     const option = {
       method: "POST",
       headers: {
@@ -27,10 +28,11 @@ export async function POST(
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { param: string } },
+  context: { params: Promise<{ param: string }> },
 ) {
   try {
-    const snapshotId = params.param; // Here 'param' is expected to be snapshotId
+    const awaitedParams = await context.params;
+    const snapshotId = awaitedParams.param; // Here 'param' is expected to be snapshotId
     const option = {
       method: "GET",
       headers: {

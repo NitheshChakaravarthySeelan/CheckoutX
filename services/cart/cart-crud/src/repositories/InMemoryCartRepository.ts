@@ -63,7 +63,7 @@ export class InMemoryCartRepository implements ICartRepository {
 
   async updateItemQuantity(
     userId: number,
-    productId: number,
+    productId: string,
     quantity: number,
   ): Promise<Cart | null> {
     let cart = await this.findByUserId(userId);
@@ -83,7 +83,7 @@ export class InMemoryCartRepository implements ICartRepository {
 
   async removeItemFromCart(
     userId: number,
-    productId: number,
+    productId: string,
   ): Promise<Cart | null> {
     let cart = await this.findByUserId(userId);
     if (!cart) {
