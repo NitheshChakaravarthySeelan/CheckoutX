@@ -20,7 +20,7 @@ public class ProductReadGrpcService extends ProductReadServiceGrpc.ProductReadSe
     @SuppressWarnings("unchecked")
     @Override
     public void getProductDetails(GetProductDetailsRequest request, StreamObserver<Product> responseObserver) {
-        GetProductByIdQuery query = new GetProductByIdQuery(Long.valueOf(request.getProductId()));
+        GetProductByIdQuery query = new GetProductByIdQuery(request.getProductId());
         Optional<ProductDTO> productDTOOptional = mediator.send(query, Optional.class);
 
         if (productDTOOptional.isPresent()) {
@@ -33,12 +33,12 @@ public class ProductReadGrpcService extends ProductReadServiceGrpc.ProductReadSe
                     .setImageUrl(dto.getImageUrl())
                     .build();
             responseObserver.onNext(product);
+            responseObserver.onCompleted();
         } else {
             // You can handle not found case by sending an error
             responseObserver.onError(io.grpc.Status.NOT_FOUND
                 .withDescription("Product with ID " + request.getProductId() + " not found.")
                 .asRuntimeException());
         }
-        responseObserver.onCompleted();
     }
 }

@@ -5,6 +5,7 @@ target/
 !/.mvn/wrapper/maven-wrapper.jar
 
 # Node
+.turbo/
 node_modules/
 .next/
 dist/

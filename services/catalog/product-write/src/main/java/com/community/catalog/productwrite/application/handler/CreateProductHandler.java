@@ -13,6 +13,7 @@ import org.springframework.cache.annotation.CacheEvict; // <--- Add this import
 
 import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -36,6 +37,7 @@ public class CreateProductHandler {
 
         // 3. Enrich and Map
         Product product = Product.builder()
+                .id(UUID.randomUUID().toString())
                 .name(command.getName())
                 .description(command.getDescription())
                 .price(command.getPrice())

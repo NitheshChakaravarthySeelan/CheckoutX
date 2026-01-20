@@ -17,8 +17,8 @@ services:
 
   product-read:
     build:
-      context: ../../services/catalog/product-read
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/catalog/product-read/Dockerfile # Specify the Dockerfile path
     container_name: product_read_dev
     depends_on:
       - postgres
@@ -33,8 +33,8 @@ services:
 
   product-write:
     build:
-      context: ../../services/catalog/product-write
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/catalog/product-write/Dockerfile # Specify the Dockerfile path
     container_name: product_write_dev
     depends_on:
       - postgres
@@ -86,40 +86,6 @@ services:
       - JWT_SECRET=your-super-secret-key # CHANGE THIS IN PRODUCTION
       - JWT_EXPIRES_IN=1h
 
-#  intent-parser:
-#    build:
-#      context: ../../services/ai/intent-parser
-#      dockerfile: Dockerfile
-#    container_name: intent_parser_dev
-#    ports:
-#      - "8086:8080" # Maps to 8086 on host to avoid conflict with payment-gateway's suggested 8086
-#    environment:
-#      - GOOGLE_API_KEY=${GOOGLE_API_KEY} # User must provide this env var
-#      - PORT=8080 # Internal port for the FastAPI app
-#
-#  plan-generator:
-#    build:
-#      context: ../../services/ai/plan-generator
-#      dockerfile: Dockerfile
-#    container_name: plan_generator_dev
-#    ports:
-#      - "8087:8080" # Maps to 8087 on host
-#    environment:
-#      - PORT=8080 # Internal port for the FastAPI app
-#
-#  plan-executor:
-#    build:
-#      context: ../../services/ai/plan-executor
-#      dockerfile: Dockerfile
-#    container_name: plan_executor_dev
-#    ports:
-#      - "8088:8080" # Maps to 8088 on host
-#    environment:
-#      - PORT=8080 # Internal port for the FastAPI app
-#    depends_on:
-#      - kafka # Plan Executor will eventually send Kafka commands
-#      - checkout-orchestrator # To send commands to it
-
   checkout-orchestrator:
     build:
       context: ../../services/checkout/checkout-orchestrator
@@ -159,8 +125,8 @@ services:
 
   cart-snapshot:
     build:
-      context: ../../services/cart/cart-snapshot
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/cart/cart-snapshot/Dockerfile # Specify the Dockerfile path
     container_name: cart_snapshot_dev
     depends_on:
       - postgres
@@ -290,7 +256,11 @@ services:
     container_name: jaeger_dev
     ports:
       - "6831:6831/udp"
-      - "16686:16686" # Jaeger UI
+      - "16686:16686"
+      - "4317:4317"
+      - "4318:4318"
+    command:
+      - "--collector.otlp.enabled=true"
 
   minio:
     image: minio/minio:latest

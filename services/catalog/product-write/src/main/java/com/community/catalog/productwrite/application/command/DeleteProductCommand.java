@@ -8,7 +8,7 @@ import java.util.List;
 @Data
 @RequiredArgsConstructor
 public class DeleteProductCommand {
-    private final Long productId;
+    private final String productId;
     private final String userId;
     private final List<String> userRoles;
 }

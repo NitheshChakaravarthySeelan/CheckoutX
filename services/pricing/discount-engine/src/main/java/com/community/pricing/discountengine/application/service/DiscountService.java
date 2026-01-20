@@ -2,6 +2,7 @@ package com.community.pricing.discountengine.application.service;
 
 import com.community.pricing.discountengine.domain.model.DiscountRule;
 import com.community.pricing.discountengine.domain.repository.DiscountRuleRepository;
+import com.community.pricing.discountengine.interfaces.dto.CartItemDTO;
 import com.community.pricing.discountengine.interfaces.dto.DiscountRequest;
 import com.community.pricing.discountengine.interfaces.dto.DiscountResponse;
 import java.math.BigDecimal;
@@ -21,7 +22,7 @@ public class DiscountService {
     public DiscountResponse calculateDiscounts(DiscountRequest request) {
         long totalDiscountCents = 0;
 
-        for (DiscountRequest.CartItemDTO item : request.getItems()) {
+        for (CartItemDTO item : request.getItems()) {
             Instant now = Instant.now();
             List<DiscountRule> rules =
                     discountRuleRepository

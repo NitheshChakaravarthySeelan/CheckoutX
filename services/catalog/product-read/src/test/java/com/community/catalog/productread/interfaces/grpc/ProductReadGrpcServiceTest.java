@@ -39,9 +39,9 @@ class ProductReadGrpcServiceTest {
     @Test
     void getProductDetails_shouldReturnProduct_whenProductExists() {
         // Given
-        Long productId = 1L;
+        String productId = "product-xyz-123";
         GetProductDetailsRequest request = GetProductDetailsRequest.newBuilder()
-                .setProductId(String.valueOf(productId))
+                .setProductId(productId)
                 .build();
         ProductDTO productDTO = ProductDTO.builder()
                 .id(productId)
@@ -58,7 +58,7 @@ class ProductReadGrpcServiceTest {
 
         // Then
         Product expectedProduct = Product.newBuilder()
-                .setId(String.valueOf(productDTO.getId()))
+                .setId(productDTO.getId())
                 .setName(productDTO.getName())
                 .setDescription(productDTO.getDescription())
                 .setPrice(productDTO.getPrice().doubleValue())
@@ -71,9 +71,9 @@ class ProductReadGrpcServiceTest {
     @Test
     void getProductDetails_shouldReturnNotFound_whenProductDoesNotExist() {
         // Given
-        Long productId = 1L;
+        String productId = "product-xyz-456";
         GetProductDetailsRequest request = GetProductDetailsRequest.newBuilder()
-                .setProductId(String.valueOf(productId))
+                .setProductId(productId)
                 .build();
 
         when(mediator.send(any(GetProductByIdQuery.class), eq(Optional.class))).thenReturn(Optional.empty());

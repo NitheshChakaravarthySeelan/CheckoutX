@@ -9,7 +9,7 @@ import java.util.List;
 @Data
 @RequiredArgsConstructor
 public class UpdateProductCommand {
-    private final Long productId;
+    private final String productId;
     private final String name;
     private final String description;
     private final BigDecimal price;

@@ -1,0 +1,74 @@
+[[1;34mINFO[m] Scanning for projects...
+[[1;34mINFO[m] ------------------------------------------------------------------------
+[[1;34mINFO[m] Detecting the operating system and CPU architecture
+[[1;34mINFO[m] ------------------------------------------------------------------------
+[[1;34mINFO[m] os.detected.name: linux
+[[1;34mINFO[m] os.detected.arch: x86_64
+[[1;34mINFO[m] os.detected.bitness: 64
+[[1;34mINFO[m] os.detected.version: 6.14
+[[1;34mINFO[m] os.detected.version.major: 6
+[[1;34mINFO[m] os.detected.version.minor: 14
+[[1;34mINFO[m] os.detected.release: ubuntu
+[[1;34mINFO[m] os.detected.release.version: 24.04
+[[1;34mINFO[m] os.detected.release.like.ubuntu: true
+[[1;34mINFO[m] os.detected.release.like.debian: true
+[[1;34mINFO[m] os.detected.classifier: linux-x86_64
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m------------------< [0;36mcom.community.users:auth-service[0;1m >------------------[m
+[[1;34mINFO[m] [1mBuilding auth-service 0.0.1-SNAPSHOT[m
+[[1;34mINFO[m] [1m--------------------------------[ jar ]---------------------------------[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-clean-plugin:3.3.2:clean[m [1m(default-clean)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Deleting /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/target
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-checkstyle-plugin:3.3.1:check[m [1m(validate)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mprotobuf-maven-plugin:0.6.1:compile[m [1m(default)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Compiling 12 proto file(s) to /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/target/generated-sources/protobuf/java
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mprotobuf-maven-plugin:0.6.1:compile-custom[m [1m(default)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Compiling 12 proto file(s) to /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/target/generated-sources/protobuf/java
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mbuild-helper-maven-plugin:3.5.0:add-source[m [1m(default)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Source directory: /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/target/generated-sources/protobuf/java added.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:resources[m [1m(default-resources)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Copying 1 resource from src/main/resources to target/classes
+[[1;34mINFO[m] Copying 0 resource from src/main/resources to target/classes
+[[1;34mINFO[m] Copying 12 resources from ../../../shared/proto to target/classes
+[[1;34mINFO[m] Copying 12 resources from ../../../shared/proto to target/classes
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.11.0:compile[m [1m(default-compile)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Changes detected - recompiling the module! :source
+[[1;34mINFO[m] Compiling 54 source files with javac [debug release 17] to target/classes
+[[1;34mINFO[m] /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/src/main/java/com/community/users/authservice/infrastructure/security/JWTService.java: Some input files use or override a deprecated API.
+[[1;34mINFO[m] /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/src/main/java/com/community/users/authservice/infrastructure/security/JWTService.java: Recompile with -Xlint:deprecation for details.
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mspotless-maven-plugin:2.43.0:check[m [1m(default)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Index file does not exist. Fallback to an empty index
+[[1;34mINFO[m] Spotless.Java is keeping 20 files clean - 0 needs changes to be clean, 20 were already clean, 0 were skipped because caching determined they were already clean
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-resources-plugin:3.3.1:testResources[m [1m(default-testResources)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] skip non existing resourceDirectory /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/src/test/resources
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-compiler-plugin:3.11.0:testCompile[m [1m(default-testCompile)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Changes detected - recompiling the module! :dependency
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-surefire-plugin:3.1.2:test[m [1m(default-test)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-jar-plugin:3.3.0:jar[m [1m(default-jar)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Building jar: /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mspring-boot-maven-plugin:3.2.0:repackage[m [1m(repackage)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Replacing main artifact /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar with repackaged archive, adding nested dependencies in BOOT-INF/.
+[[1;34mINFO[m] The original artifact has been renamed to /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar.original
+[[1;34mINFO[m] 
+[[1;34mINFO[m] [1m--- [0;32mmaven-install-plugin:3.1.1:install[m [1m(default-install)[m @ [36mauth-service[0;1m ---[m
+[[1;34mINFO[m] Installing /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/pom.xml to /home/nithesh/.m2/repository/com/community/users/auth-service/0.0.1-SNAPSHOT/auth-service-0.0.1-SNAPSHOT.pom
+[[1;34mINFO[m] Installing /home/nithesh/WindowsDrive/Coding/Project/Coding/Project/Community/community-platform/services/users/auth-service/target/auth-service-0.0.1-SNAPSHOT.jar to /home/nithesh/.m2/repository/com/community/users/auth-service/0.0.1-SNAPSHOT/auth-service-0.0.1-SNAPSHOT.jar
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] [1;32mBUILD SUCCESS[m
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m
+[[1;34mINFO[m] Total time:  6.370 s
+[[1;34mINFO[m] Finished at: 2026-01-13T17:36:03+05:30
+[[1;34mINFO[m] [1m------------------------------------------------------------------------[m

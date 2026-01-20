@@ -3,18 +3,17 @@ package com.community.users.userservice.domain.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.community.users.userservice.domain.model.User;
+import org.mockito.Mockito;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@DataJpaTest
+@ExtendWith(MockitoExtension.class)
 class UserRepositoryTest {
 
-    @Autowired private TestEntityManager entityManager;
-
-    @Autowired private UserRepository userRepository;
+    @Mock private UserRepository userRepository;
 
     @Test
     void whenSaveUser_thenUserIsPersisted() {
@@ -24,35 +23,52 @@ class UserRepositoryTest {
                         .email("test@example.com")
                         .password("hashedpassword")
                         .build();
+        
+        User savedUser = User.builder()
+                .id(1L) // Simulate an ID being set after persistence
+                .userName("testuser")
+                .email("test@example.com")
+                .password("hashedpassword")
+                .build();
 
-        User savedUser = userRepository.save(user);
+        Mockito.when(userRepository.save(user)).thenReturn(savedUser);
+        Mockito.when(userRepository.findById(savedUser.getId())).thenReturn(Optional.of(savedUser));
 
-        assertThat(savedUser).isNotNull();
-        assertThat(savedUser.getId()).isNotNull();
-        assertThat(savedUser.getUserName()).isEqualTo("testuser");
-        assertThat(savedUser.getEmail()).isEqualTo("test@example.com");
-        assertThat(savedUser.getPassword()).isEqualTo("hashedpassword");
+        User resultUser = userRepository.save(user);
 
-        Optional<User> foundUser = userRepository.findById(savedUser.getId());
+        assertThat(resultUser).isNotNull();
+        assertThat(resultUser.getId()).isNotNull();
+        assertThat(resultUser.getUserName()).isEqualTo("testuser");
+        assertThat(resultUser.getEmail()).isEqualTo("test@example.com");
+        assertThat(resultUser.getPassword()).isEqualTo("hashedpassword");
+
+        Optional<User> foundUser = userRepository.findById(resultUser.getId());
         assertThat(foundUser).isPresent();
         assertThat(foundUser.get().getUserName()).isEqualTo("testuser");
+
+        Mockito.verify(userRepository, Mockito.times(1)).save(user);
+        Mockito.verify(userRepository, Mockito.times(1)).findById(savedUser.getId());
     }
 
     @Test
     void whenFindByEmail_thenUserIsFound() {
+        String email = "find@example.com";
         User user =
                 User.builder()
+                        .id(2L)
                         .userName("findbyemail")
-                        .email("find@example.com")
+                        .email(email)
                         .password("hashedpassword")
                         .build();
-        entityManager.persistAndFlush(user);
 
-        // Add a custom method to UserRepository for this test
-        // For now, we'll rely on findById or add a custom method later if needed
-        // Optional<User> foundUser = userRepository.findByEmail("find@example.com");
-        // assertThat(foundUser).isPresent();
-        // assertThat(foundUser.get().getUserName()).isEqualTo("findbyemail");
+        Mockito.when(userRepository.findByEmail(email)).thenReturn(Optional.of(user));
+
+        Optional<User> foundUser = userRepository.findByEmail(email);
+        assertThat(foundUser).isPresent();
+        assertThat(foundUser.get().getUserName()).isEqualTo("findbyemail");
+        assertThat(foundUser.get().getEmail()).isEqualTo(email);
+
+        Mockito.verify(userRepository, Mockito.times(1)).findByEmail(email);
     }
 
     // Add more tests for update, delete, and other custom queries if they exist

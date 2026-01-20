@@ -29,9 +29,9 @@ class GetProductByIdHandlerTest {
     @Test
     void testHandle_WhenProductExists_ShouldReturnProductDTO() {
         // Arrange
-        Long productId = 1L;
+        String productId = "product-xyz-123";
         ProductLookupOuterClass.Product product = ProductLookupOuterClass.Product.newBuilder()
-                .setId(String.valueOf(productId))
+                .setId(productId)
                 .setName("Test Product")
                 .setPrice(99.99)
                 .setSku("TEST-001")
@@ -57,7 +57,7 @@ class GetProductByIdHandlerTest {
     @Test
     void testHandle_WhenProductDoesNotExist_ShouldReturnEmptyOptional() {
         // Arrange
-        Long productId = 2L;
+        String productId = "product-xyz-456";
         GetProductByIdQuery query = new GetProductByIdQuery(productId);
         when(productLookupBlockingStub.getProductById(any(ProductLookupOuterClass.GetProductByIdRequest.class))).thenThrow(new RuntimeException("Product not found"));
 

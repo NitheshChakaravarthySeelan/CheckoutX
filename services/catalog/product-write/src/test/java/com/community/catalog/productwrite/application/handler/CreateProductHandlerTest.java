@@ -42,6 +42,7 @@ class CreateProductHandlerTest {
 
         // Assert
         assertNotNull(result);
+        assertNotNull(result.getId());
         assertEquals("New Gadget", result.getName());
         assertEquals("ACTIVE", result.getStatus());
         verify(productRepository, times(1)).findBySku("GADGET-001");

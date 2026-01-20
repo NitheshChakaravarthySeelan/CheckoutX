@@ -30,7 +30,7 @@ public class ProductReadController {
 
     @SuppressWarnings("unchecked")
     @GetMapping("/{id}")
-    public ResponseEntity<ProductDTO> getProductById(@PathVariable Long id) {
+    public ResponseEntity<ProductDTO> getProductById(@PathVariable String id) {
         Optional<ProductDTO> result = mediator.send(new GetProductByIdQuery(id), Optional.class);
         return result.map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
