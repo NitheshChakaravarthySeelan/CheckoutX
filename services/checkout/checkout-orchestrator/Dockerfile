@@ -2,6 +2,9 @@ FROM python:3.12-slim-bookworm as builder
 
 WORKDIR /app
 
+# Set environment variable for requests timeout
+ENV REQUESTS_TIMEOUT=120
+
 # Install Poetry
 RUN pip install poetry
 

@@ -26,7 +26,7 @@ class DeleteProductHandlerTest {
     @Test
     void testHandle_WhenUserIsAdmin_ShouldDeleteProduct() {
         // Arrange
-        Long productId = 1L;
+        String productId = "a2b7e9b8-3e3c-4e8a-8f7a-9a9b9c9d9e9f";
         DeleteProductCommand command = new DeleteProductCommand(productId, "admin-user", List.of("ADMIN"));
         doNothing().when(productRepository).deleteById(productId);
 
@@ -40,7 +40,7 @@ class DeleteProductHandlerTest {
     @Test
     void testHandle_WhenUserLacksRole_ShouldThrowForbiddenException() {
         // Arrange
-        Long productId = 1L;
+        String productId = "b3c8f0c9-4f4d-5f9b-9g8b-0a0b0c0d0e0f";
         DeleteProductCommand command = new DeleteProductCommand(productId, "normal-user", List.of("USER"));
 
         // Act & Assert

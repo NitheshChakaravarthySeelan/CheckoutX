@@ -26,7 +26,7 @@ public class GetAllProductsHandler {
 
   private ProductDTO convertToDTO(ProductView product) {
     return ProductDTO.builder()
-        .id(product.getId())
+        .id(String.valueOf(product.getId()))
         .name(product.getName())
         .description(product.getDescription())
         .price(product.getPrice())

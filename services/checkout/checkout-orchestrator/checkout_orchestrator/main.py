@@ -1,18 +1,13 @@
 from fastapi import FastAPI, Response # Add Response
-from .api.endpoints import checkout
-from databases import Database
-from aiokafka import AIOKafkaProducer
 import os
+from .api.endpoints import checkout
 import asyncio
+import httpx # Added import for httpx
 from .core.kafka_consumer import KafkaConsumerManager
 from .infrastructure.repositories.saga_repository import SagaRepository
-from prometheus_client import generate_latest, CollectorRegistry, Gauge, Counter # Import prometheus_client
+import checkout_orchestrator.core.config as config
+from checkout_orchestrator.core.config import database, kafka_producer, httpx_client, KAFKA_BOOTSTRAP_SERVERS, registry # Import shared instances
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:secret@postgres_dev:5432/community_platform")
-KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092")
-
-database = Database(DATABASE_URL)
-kafka_producer = AIOKafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
 kafka_consumer_manager: KafkaConsumerManager = None
 
 app = FastAPI(title="Checkout Orchestrator")
@@ -26,13 +21,13 @@ async def metrics():
 
 @app.on_event("startup")
 async def startup_db_kafka():
-    global httpx_client
     await database.connect()
     await kafka_producer.start()
     print("Connected to database and Kafka producer started.")
 
     # Initializing httpx connection
-    httpx_client = httpx.AsyncClient(
+    # httpx_client is already declared in config.py, now initialize it
+    config.httpx_client = httpx.AsyncClient(
         timeout= httpx.Timeout(
             connect=5.0,
             read=10.0,
@@ -55,7 +50,7 @@ async def startup_db_kafka():
         database=database,
         saga_repository=saga_repository,
         producer=kafka_producer,
-        httpx_client=httpx_client,
+        httpx_client=config.httpx_client,
     )
     asyncio.create_task(kafka_consumer_manager.start_consumer())
     print("Kafka consumer manager started.")
@@ -63,22 +58,12 @@ async def startup_db_kafka():
 
 @app.on_event("shutdown")
 async def shutdown_db_kafka():
-    global httpx_client
     await database.disconnect()
     await kafka_producer.stop()
     if kafka_consumer_manager:
         await kafka_consumer_manager.stop_consumer()
     print("Disconnected from database and Kafka producer/consumer stopped.")
-    if httpx_client is not None:
-        await httpx_client.aclose()
-        httpx_client = None
+    if config.httpx_client is not None:
+        await config.httpx_client.aclose()
+        config.httpx_client = None
     print("Disconnected from the httpx_client")
-
-@app.get("/")
-async def read_root():
-    return {"message": "Hello from Checkout Orchestrator Service"}
-
-# Add a health check endpoint
-@app.get("/health")
-async def health_check():
-    return {"status": "ok"}

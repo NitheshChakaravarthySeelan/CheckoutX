@@ -14,7 +14,7 @@ scrape_configs:
     static_configs:
       - targets: ['user-service:8080']
   - job_name: 'auth-service'
-    metrics_configs: '/actuator/prometheus'
+    metrics_path: '/actuator/prometheus'
     static_configs:
       - targets: ['auth-service:3002']
   - job_name: 'product-read'

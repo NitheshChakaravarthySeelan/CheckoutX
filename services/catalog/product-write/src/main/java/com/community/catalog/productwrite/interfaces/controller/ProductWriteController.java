@@ -51,7 +51,7 @@ public class ProductWriteController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Product> updateProduct(
-            @PathVariable Long id,
+            @PathVariable String id,
             @Valid @RequestBody UpdateProductRequestDTO requestDTO,
             @RequestHeader("X-User-ID") String userId,
             @RequestHeader("X-User-Roles") String userRolesHeader) {
@@ -78,7 +78,7 @@ public class ProductWriteController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteProduct(
-            @PathVariable Long id,
+            @PathVariable String id,
             @RequestHeader("X-User-ID") String userId,
             @RequestHeader("X-User-Roles") String userRolesHeader) {
 

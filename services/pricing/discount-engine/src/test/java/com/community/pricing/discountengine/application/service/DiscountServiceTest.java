@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.community.pricing.discountengine.domain.model.DiscountRule;
 import com.community.pricing.discountengine.domain.repository.DiscountRuleRepository;
+import com.community.pricing.discountengine.interfaces.dto.CartItemDTO;
 import com.community.pricing.discountengine.interfaces.dto.DiscountRequest;
 import com.community.pricing.discountengine.interfaces.dto.DiscountResponse;
 import java.math.BigDecimal;
@@ -33,7 +34,7 @@ class DiscountServiceTest {
     @BeforeEach
     void setUp() {
         // Common setup for a request with one item
-        DiscountRequest.CartItemDTO item = new DiscountRequest.CartItemDTO();
+        CartItemDTO item = new CartItemDTO();
         item.setProductId("prod123");
         item.setQuantity(2);
         item.setPriceCents(1000); // $10.00

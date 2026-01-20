@@ -21,7 +21,7 @@ public class GetProductByIdHandler {
 
     public Optional<ProductDTO> handle(GetProductByIdQuery query) {
         ProductLookupOuterClass.GetProductByIdRequest request = ProductLookupOuterClass.GetProductByIdRequest.newBuilder()
-                .setId(String.valueOf(query.getProductId()))
+                .setId(query.getProductId())
                 .build();
 
         try {
@@ -38,7 +38,7 @@ public class GetProductByIdHandler {
             }
 
             return Optional.of(ProductDTO.builder()
-                    .id(Long.valueOf(product.getId()))
+                    .id(product.getId())
                     .name(product.getName())
                     .description(product.getDescription())
                     .price(BigDecimal.valueOf(product.getPrice()))

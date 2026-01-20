@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GetProductByIdQuery {
-    private Long productId;
+    private String productId;
 }
