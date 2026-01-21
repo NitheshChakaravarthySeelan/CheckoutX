@@ -1,6 +1,6 @@
 use tonic::{Request, Response, Status};
 use crate::product_lookup::{
-    product_lookup_server::{ProductLookup, ProductLookupServer},
+    product_lookup_server::{ProductLookup},
     GetProductByIdRequest, Product,
 };
 use sqlx::{FromRow, Pool, Postgres};
@@ -13,7 +13,7 @@ pub mod product_lookup {
 
 #[derive(FromRow, Debug, Clone)]
 pub struct ProductRow {
-    pub id: i64,
+    pub id: String,
     pub name: Option<String>,
     pub description: Option<String>,
     pub price: Option<f64>,
@@ -30,7 +30,7 @@ pub struct ProductRow {
 
 #[async_trait]
 pub trait ProductRepository: Send + Sync {
-    async fn find_product_by_id(&self, id: i64) -> Result<Option<ProductRow>, sqlx::Error>;
+    async fn find_product_by_id(&self, id: &str) -> Result<Option<ProductRow>, sqlx::Error>;
 }
 
 pub struct DbProductRepository {
@@ -45,7 +45,7 @@ impl DbProductRepository {
 
 #[async_trait]
 impl ProductRepository for DbProductRepository {
-    async fn find_product_by_id(&self, id: i64) -> Result<Option<ProductRow>, sqlx::Error> {
+    async fn find_product_by_id(&self, id: &str) -> Result<Option<ProductRow>, sqlx::Error> {
         sqlx::query_as(
             r#"
             SELECT id, name, description, price, quantity, sku, image_url, category, manufacturer, status, version, created_at, updated_at
@@ -74,15 +74,14 @@ impl ProductLookup for MyProductLookup {
         &self,
         request: Request<GetProductByIdRequest>,
     ) -> Result<Response<Product>, Status> {
-        let id_str = request.into_inner().id;
-        let id = id_str.parse::<i64>().map_err(|_| Status::invalid_argument("Invalid product ID"))?;
+        let id = request.into_inner().id;
 
-        let row = self.repository.find_product_by_id(id).await
+        let row = self.repository.find_product_by_id(&id).await
             .map_err(|e| Status::internal(format!("Database error: {}", e)))?
             .ok_or_else(|| Status::not_found(format!("Product with ID {} not found", id)))?;
 
         let product = Product {
-            id: row.id.to_string(),
+            id: row.id,
             name: row.name.unwrap_or_default(),
             description: row.description.unwrap_or_default(),
             price: row.price.unwrap_or(0.0),

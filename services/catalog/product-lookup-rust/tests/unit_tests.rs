@@ -1,5 +1,6 @@
-use tonic::{Request, Response, Status};
-use product_lookup_rust::{MyProductLookup, ProductRow, ProductRepository, product_lookup::{GetProductByIdRequest, Product, product_lookup_server::ProductLookup}};
+use tonic::{Request, Status};
+use product_lookup_rust::{MyProductLookup, ProductRow, ProductRepository, product_lookup::{GetProductByIdRequest}};
+use product_lookup_rust::product_lookup::product_lookup_server::ProductLookup; // Add this import
 use async_trait::async_trait;
 use std::sync::Arc;
 use chrono::{Utc, TimeZone};
@@ -7,15 +8,15 @@ use chrono::{Utc, TimeZone};
 // Mock implementation of ProductRepository for testing
 pub struct MockProductRepository {
     // You could add fields here to control the behavior of the mock
-    // e.g., expected_id: Option<i64>, return_value: Option<ProductRow>, etc.
+    // e.g., expected_id: Option<String>, return_value: Option<ProductRow>, etc.
 }
 
 #[async_trait]
 impl ProductRepository for MockProductRepository {
-    async fn find_product_by_id(&self, id: i64) -> Result<Option<ProductRow>, sqlx::Error> {
+    async fn find_product_by_id(&self, id: &str) -> Result<Option<ProductRow>, sqlx::Error> {
         match id {
-            1 => Ok(Some(ProductRow {
-                id: 1,
+            "a2b7e9b8-3e3c-4e8a-8f7a-9a9b9c9d9e9f" => Ok(Some(ProductRow {
+                id: "a2b7e9b8-3e3c-4e8a-8f7a-9a9b9c9d9e9f".to_string(),
                 name: Some("Test Product".to_string()),
                 description: Some("A test product".to_string()),
                 price: Some(9.99),
@@ -42,7 +43,7 @@ async fn test_get_product_by_id_success() -> Result<(), Box<dyn std::error::Erro
 
     // 2. Prepare request
     let request = Request::new(GetProductByIdRequest {
-        id: "1".to_string(),
+        id: "a2b7e9b8-3e3c-4e8a-8f7a-9a9b9c9d9e9f".to_string(),
     });
 
     // 3. Call the service method
@@ -50,7 +51,7 @@ async fn test_get_product_by_id_success() -> Result<(), Box<dyn std::error::Erro
 
     // 4. Assertions
     let product = response.into_inner();
-    assert_eq!(product.id, "1");
+    assert_eq!(product.id, "a2b7e9b8-3e3c-4e8a-8f7a-9a9b9c9d9e9f");
     assert_eq!(product.name, "Test Product");
     assert_eq!(product.price, 9.99);
     assert_eq!(product.sku, "TEST-001");
@@ -67,7 +68,7 @@ async fn test_get_product_by_id_not_found() -> Result<(), Box<dyn std::error::Er
 
     // 2. Prepare request
     let request = Request::new(GetProductByIdRequest {
-        id: "999".to_string(), // Non-existent ID
+        id: "b3c8f0c9-4f4d-5f9b-9g8b-0a0b0c0d0e0f".to_string(), // Non-existent ID
     });
 
     // 3. Call the service method and expect an error
@@ -75,28 +76,29 @@ async fn test_get_product_by_id_not_found() -> Result<(), Box<dyn std::error::Er
 
     // 4. Assertions
     assert_eq!(error.code(), Status::not_found("").code());
-    assert!(error.message().contains("Product with ID 999 not found"));
+    assert!(error.message().contains("Product with ID b3c8f0c9-4f4d-5f9b-9g8b-0a0b0c0d0e0f not found"));
 
     Ok(())
 }
 
 #[tokio::test]
-async fn test_get_product_by_id_invalid_id() -> Result<(), Box<dyn std::error::Error>> {
+async fn test_get_product_by_id_invalid_format_now_not_found() -> Result<(), Box<dyn std::error::Error>> {
     // 1. Setup mock repository (not used for this test's logic, but required for MyProductLookup)
     let mock_repo = Arc::new(MockProductRepository {});
     let lookup_service = MyProductLookup::new(mock_repo);
 
     // 2. Prepare request
     let request = Request::new(GetProductByIdRequest {
-        id: "invalid-id".to_string(),
+        id: "invalid-id-format".to_string(),
     });
 
     // 3. Call the service method and expect an error
     let error = lookup_service.get_product_by_id(request).await.unwrap_err();
 
     // 4. Assertions
-    assert_eq!(error.code(), Status::invalid_argument("").code());
-    assert!(error.message().contains("Invalid product ID"));
+    // Since we no longer parse the ID as i64, "invalid-id-format" is now just a valid string ID that isn't found.
+    assert_eq!(error.code(), Status::not_found("").code());
+    assert!(error.message().contains("Product with ID invalid-id-format not found"));
 
     Ok(())
 }

@@ -2,26 +2,26 @@ package com.community.catalog.productread.application.handler;
 
 import com.community.catalog.productread.application.command.GetProductByIdQuery;
 import com.community.catalog.productread.application.dto.ProductDTO;
+import com.community.catalog.productread.domain.model.ProductView;
+import com.community.catalog.productread.domain.repository.ProductViewRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import product_lookup.ProductLookupGrpc;
-import product_lookup.ProductLookupOuterClass;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GetProductByIdHandlerTest {
 
     @Mock
-    private ProductLookupGrpc.ProductLookupBlockingStub productLookupBlockingStub;
+    private ProductViewRepository productViewRepository;
 
     @InjectMocks
     private GetProductByIdHandler handler;
@@ -30,18 +30,18 @@ class GetProductByIdHandlerTest {
     void testHandle_WhenProductExists_ShouldReturnProductDTO() {
         // Arrange
         String productId = "product-xyz-123";
-        ProductLookupOuterClass.Product product = ProductLookupOuterClass.Product.newBuilder()
-                .setId(productId)
-                .setName("Test Product")
-                .setPrice(99.99)
-                .setSku("TEST-001")
-                .setQuantity(100)
-                .setCreatedAt("2025-12-10T13:00:00.000Z")
-                .setUpdatedAt("2025-12-10T13:00:00.000Z")
+        ProductView productView = ProductView.builder()
+                .id(productId)
+                .name("Test Product")
+                .price(new BigDecimal("99.99"))
+                .sku("TEST-001")
+                .quantity(100)
+                .createdAt(new Date())
+                .updatedAt(new Date())
                 .build();
 
         GetProductByIdQuery query = new GetProductByIdQuery(productId);
-        when(productLookupBlockingStub.getProductById(any(ProductLookupOuterClass.GetProductByIdRequest.class))).thenReturn(product);
+        when(productViewRepository.findById(productId)).thenReturn(Optional.of(productView));
 
         // Act
         Optional<ProductDTO> result = handler.handle(query);
@@ -59,7 +59,7 @@ class GetProductByIdHandlerTest {
         // Arrange
         String productId = "product-xyz-456";
         GetProductByIdQuery query = new GetProductByIdQuery(productId);
-        when(productLookupBlockingStub.getProductById(any(ProductLookupOuterClass.GetProductByIdRequest.class))).thenThrow(new RuntimeException("Product not found"));
+        when(productViewRepository.findById(productId)).thenReturn(Optional.empty());
 
         // Act
         Optional<ProductDTO> result = handler.handle(query);
@@ -68,3 +68,4 @@ class GetProductByIdHandlerTest {
         assertTrue(result.isEmpty(), "Result should be empty for a non-existent product");
     }
 }
+

@@ -1,3 +1,4 @@
+use dotenvy::dotenv;
 use product_lookup_rust::{product_lookup, DbProductRepository, MyProductLookup};
 use sqlx::PgPool;
 use std::{env, sync::Arc};
@@ -5,11 +6,13 @@ use tonic::transport::Server;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv().ok(); // Loads the .env file
     let database_url =
         env::var("DATABASE_URL").expect("DATABASE_URL must be set for main function");
+    println!("DATABASE_URL being used: {}", database_url);
     let pool = PgPool::connect(&database_url).await?;
 
-    let addr = "[::1]:50051".parse()?;
+    let addr = "0.0.0.0:50051".parse()?;
     let db_repo = DbProductRepository::new(pool);
     let lookup_service = MyProductLookup::new(Arc::new(db_repo));
 
