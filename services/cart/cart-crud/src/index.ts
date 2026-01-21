@@ -3,6 +3,7 @@ import app, { cartService } from "./app.js"; // Use ES Module import and import 
 import { initKafka, disconnectKafka } from "./kafka.js"; // Import Kafka functions
 import { startGrpcServer } from "./grpc/cart.service.js"; // Import gRPC server startup function
 import config from "./config/index.js"; // Import config
+import { initDatabase } from "./utils/db.js"; // Import database initializer
 
 const port = process.env.PORT || 3000;
 const grpcPort = config.grpcPort;
@@ -12,6 +13,7 @@ let grpcServer: any; // Define a variable to hold the gRPC server instance
 // Initialize Kafka and start the server
 const startServer = async () => {
   try {
+    await initDatabase(); // Ensure schema is created before starting
     await initKafka(cartService);
     app.listen(port, () => {
       console.log(`Express server is running on http://localhost:${port}`);

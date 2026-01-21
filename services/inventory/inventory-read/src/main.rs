@@ -30,6 +30,23 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to connect to Postgres.");
 
+    // Create the table if it doesn't exist
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS inventory (
+            product_id VARCHAR(255) PRIMARY KEY,
+            quantity_available INTEGER NOT NULL CHECK (quantity_available >= 0),
+            CONSTRAINT fk_product
+                FOREIGN KEY(product_id)
+                REFERENCES products(id)
+                ON DELETE CASCADE
+        );
+        "#
+    )
+    .execute(&pool)
+    .await
+    .expect("Failed to create inventory table.");
+
     let inventory_service = InventoryService::new(pool.clone());
     let inventory_service_grpc = inventory_service.clone(); // Clone for gRPC server
 
