@@ -20,7 +20,7 @@ import java.util.Date;
 public class ProductView {
 
     @Id
-    private Long id;
+    private String id;
 
     @Column(nullable = false)
     private String name;

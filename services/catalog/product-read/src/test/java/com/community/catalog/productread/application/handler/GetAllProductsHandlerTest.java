@@ -30,8 +30,8 @@ class GetAllProductsHandlerTest {
     @Test
     void testHandle_WhenProductsExist_ShouldReturnListOfProductDTOs() {
         // Arrange
-        ProductView product1 = ProductView.builder().id(1L).name("Product 1").price(new BigDecimal("10.00")).build();
-        ProductView product2 = ProductView.builder().id(2L).name("Product 2").price(new BigDecimal("20.00")).build();
+        ProductView product1 = ProductView.builder().id("uuid-1").name("Product 1").price(new BigDecimal("10.00")).build();
+        ProductView product2 = ProductView.builder().id("uuid-2").name("Product 2").price(new BigDecimal("20.00")).build();
         List<ProductView> productList = List.of(product1, product2);
 
         GetAllProductsQuery query = new GetAllProductsQuery();

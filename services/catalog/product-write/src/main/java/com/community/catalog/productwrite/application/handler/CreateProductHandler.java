@@ -5,22 +5,24 @@ import com.community.catalog.productwrite.application.error.ForbiddenException;
 import com.community.catalog.productwrite.application.error.ProductAlreadyExistsException;
 import com.community.catalog.productwrite.domain.model.Product;
 import com.community.catalog.productwrite.domain.repository.ProductRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.cache.annotation.CacheEvict; // <--- Add this import
+import org.springframework.cache.annotation.CacheEvict;
 
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
 @Component
-@RequiredArgsConstructor
 public class CreateProductHandler {
 
     private final ProductRepository productRepository;
     private static final List<String> REQUIRED_ROLES = List.of("ADMIN", "PRODUCT_MANAGER");
+
+    public CreateProductHandler(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
 
     @Transactional
     @CacheEvict(value = "products", allEntries = true) // <--- Add this annotation
