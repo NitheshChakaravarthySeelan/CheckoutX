@@ -2,7 +2,7 @@
 // Core business logic.
 
 use sqlx::{PgPool, Error};
-use uuid::Uuid;
+
 use crate::domain::model::Inventory;
 
 #[derive(Debug, Clone)] // Added Debug trait
@@ -15,7 +15,7 @@ impl InventoryService {
         InventoryService { pool }
     }
 
-    pub async fn get_inventory_by_product_id(&self, product_id: Uuid) -> Result<Option<Inventory>, Error> {
+    pub async fn get_inventory_by_product_id(&self, product_id: &str) -> Result<Option<Inventory>, Error> {
         let inventory = sqlx::query_as!(
             Inventory,
             r#"

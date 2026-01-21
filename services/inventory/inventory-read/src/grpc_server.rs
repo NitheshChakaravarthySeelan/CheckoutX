@@ -1,7 +1,6 @@
 // services/inventory/inventory-read/src/grpc_server.rs
 
 use tonic::{Request, Response, Status};
-use uuid::Uuid;
 use inventory_read::domain::service::InventoryService;
 
 use inventory_read::inventory_proto::inventory_service_server::InventoryService as InventoryServiceTrait;
@@ -28,21 +27,10 @@ impl InventoryServiceTrait for InventoryGrpcService {
         let product_id_str = req.product_id;
         let requested_quantity = req.quantity;
 
-        // Convert product_id string to Uuid
-        let product_uuid = match Uuid::parse_str(&product_id_str) {
-            Ok(uuid) => uuid,
-            Err(_) => {
-                return Err(Status::invalid_argument(format!(
-                    "Invalid product_id format: {}",
-                    product_id_str
-                )));
-            }
-        };
-
         // Call the domain service
         let inventory_result = self
             .inventory_service
-            .get_inventory_by_product_id(product_uuid)
+            .get_inventory_by_product_id(&product_id_str)
             .await;
 
         match inventory_result {

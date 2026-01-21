@@ -51,7 +51,7 @@ export class PostgresCartRepository implements ICartRepository {
   async updateCart(cart: Cart): Promise<Cart> {
     const result = await this.pool.query(
       "UPDATE carts SET items = $1, updated_at = NOW() WHERE id = $2 RETURNING *",
-      [cart.items, cart.id],
+      [JSON.stringify(cart.items), cart.id],
     );
     const row = result.rows[0];
     return {

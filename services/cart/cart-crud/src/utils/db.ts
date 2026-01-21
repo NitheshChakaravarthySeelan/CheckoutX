@@ -22,3 +22,24 @@ const getPool = () => {
 };
 
 export const dbPool = getPool();
+
+export const initDatabase = async () => {
+  try {
+    await dbPool.query(`
+      CREATE TABLE IF NOT EXISTS carts (
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL,
+        items JSONB NOT NULL DEFAULT '[]'::jsonb,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+    await dbPool.query(`
+      CREATE INDEX IF NOT EXISTS idx_carts_user_id ON carts(user_id);
+    `);
+    console.log("Database schema initialized successfully.");
+  } catch (error) {
+    console.error("Error initializing database schema:", error);
+    process.exit(1); // Exit if schema can't be created
+  }
+};

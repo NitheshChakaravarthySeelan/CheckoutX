@@ -3,6 +3,7 @@ import { AuthGrpcClient } from "./lib/grpc/auth.client"; // Import AuthGrpcClien
 
 export const config = {
   matcher: ["/api/products/:path*", "/api/orders/:path*"],
+  runtime: "nodejs", // Force Node.js runtime
 };
 
 // Instantiate AuthGrpcClient
