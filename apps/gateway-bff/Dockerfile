@@ -1,36 +1,30 @@
-# Stage 1: Install dependencies
-FROM node:20-alpine AS deps
+# Stage 1: Build the application
+FROM node:20-alpine AS builder
 WORKDIR /app
+
+# Copy the entire monorepo context
 COPY . .
+
+# Install pnpm and dependencies, then build the specific service
 RUN npm install -g pnpm
 ENV CI=true
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --filter=gateway-bff
+RUN pnpm --filter=gateway-bff run build
 
-# Stage 2: Build the application
-FROM node:20-alpine AS builder
-WORKDIR /app/apps/gateway-bff
-RUN npm install -g pnpm
-COPY --from=deps /app ./
-ENV NEXT_TELEMETRY_DISABLED 1
-RUN pnpm build
-
-# Stage 3: Create the final, lightweight production container
+# Stage 2: Create the final, lightweight production container
 FROM node:20-alpine AS runner
-WORKDIR /app/apps/gateway-bff
+WORKDIR /app
 
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
+# Copy the entire standalone output to the root of the app
+COPY --from=builder /app/apps/gateway-bff/.next/standalone ./
 COPY --from=builder /app/apps/gateway-bff/public ./public
-COPY --from=builder /app/apps/gateway-bff/.next/standalone ./ # This copies the standalone output
-COPY --from=builder /app/apps/gateway-bff/.next/static ./.next/static
-
-USER nextjs
 
 EXPOSE 3000
 ENV PORT 3000
 
-CMD ["node", "server.js"]
+# Start the Next.js server
+# server.js is now expected to be directly in /app
+CMD ["pnpm", "dev"]

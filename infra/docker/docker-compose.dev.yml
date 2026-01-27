@@ -2,9 +2,12 @@ version: '3.8'
 services:
   user-service:
     build:
-      context: ../../services/users/user-service
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/users/user-service/Dockerfile
+      network: host
     container_name: user_service_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
     ports:
@@ -19,7 +22,10 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/catalog/product-read/Dockerfile # Specify the Dockerfile path
+      network: host
     container_name: product_read_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
     ports:
@@ -36,7 +42,10 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/catalog/product-write/Dockerfile # Specify the Dockerfile path
+      network: host
     container_name: product_write_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
     ports:
@@ -52,7 +61,10 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/cart/cart-crud/Dockerfile # Specify the Dockerfile path
+      network: host
     container_name: cart_crud_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
     ports:
@@ -69,13 +81,16 @@ services:
       - PRODUCT_READ_GRPC_URL=product-read:9091 # Correct gRPC URL for product-read
       - INVENTORY_READ_GRPC_URL=inventory-read:50052 # Correct gRPC URL for inventory-read
       - DISCOUNT_ENGINE_URL=http://discount-engine:8085 # Correct HTTP URL for discount-engine
-      - TAX_CALCULATION_URL=http://tax-calculation:8086 # Correct HTTP URL for tax-calculation
+      - TAX_CALCULATION_URL=http://tax-calculation:8087 # Correct HTTP URL for tax-calculation
 
   auth-service:
     build:
       context: ../../ # Monorepo root
-      dockerfile: services/users/auth-service/Dockerfile # Specify the Dockerfile path
+      dockerfile: services/users/auth-service/Dockerfile
+      network: host
     container_name: auth_service_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
     ports:
@@ -87,16 +102,20 @@ services:
       - DB_PASSWORD=secret
       - DB_DATABASE=community_platform
       - DB_PORT=5432
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_dev:5432/community_platform
       # Add JWT secrets and other auth-specific config here
-      - JWT_SECRET=your-super-secret-key # CHANGE THIS IN PRODUCTION
+      - JWT_SECRET=RjhFY0JDenlOV3NEaVZiR2hIMFVkQk1Qa01oc1JCSFA=
       - JWT_EXPIRES_IN=1h
       - GRPC_SERVER_PORT=6565
 
   checkout-orchestrator:
     build:
-      context: ../../services/checkout/checkout-orchestrator
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/checkout/checkout-orchestrator/Dockerfile
+      network: host
     container_name: checkout_orchestrator_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
       - kafka
@@ -107,12 +126,17 @@ services:
       - DATABASE_URL=postgresql://admin:secret@postgres_dev:5432/community_platform
       - KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092
       - PORT=8000 # Internal port for the FastAPI app
+      - DISCOUNT_ENGINE_SERVICE_URL=http://discount-engine:8085
+      - TAX_CALCULATION_SERVICE_URL=http://tax-calculation:8087
 
   gateway-bff:
     build:
       context: ../../ # Monorepo root
       dockerfile: apps/gateway-bff/Dockerfile # Specify the Dockerfile path
+      network: host
     container_name: gateway_bff_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
       - auth-service
@@ -136,7 +160,10 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/cart/cart-snapshot/Dockerfile # Specify the Dockerfile path
+      network: host
     container_name: cart_snapshot_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
       - cart-crud # This service depends on cart-crud to get live cart data
@@ -153,9 +180,12 @@ services:
 
   cart-pricing:
     build:
-      context: ../../services/cart/cart-pricing
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/cart/cart-pricing/Dockerfile
+      network: host
     container_name: cart_pricing_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
       - cart-snapshot # Depends on cart-snapshot to get immutable cart data
@@ -173,6 +203,8 @@ services:
   postgres:
     image: postgres:15
     container_name: postgres_dev
+    dns: 8.8.8.8
+
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=secret
@@ -186,6 +218,8 @@ services:
   redis:
     image: redis:7
     container_name: redis_dev
+    dns: 8.8.8.8
+
     ports:
       - "6379:6379"
     volumes:
@@ -194,6 +228,8 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper_dev
+    dns: 8.8.8.8
+
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -203,6 +239,8 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka_dev
+    dns: 8.8.8.8
+
     depends_on:
       - zookeeper
     ports:
@@ -219,6 +257,8 @@ services:
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0
     container_name: schema_registry_dev
+    dns: 8.8.8.8
+
     depends_on:
       - kafka
     ports:
@@ -230,9 +270,12 @@ services:
 
   discount-engine:
     build:
-      context: ../../
+      context: ../../ # Monorepo root
       dockerfile: services/pricing/discount-engine/Dockerfile
+      network: host
     container_name: discount_engine_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
     ports:
@@ -244,13 +287,16 @@ services:
 
   tax-calculation:
     build:
-      context: ../../
+      context: ../../ # Monorepo root
       dockerfile: services/pricing/tax-calculation/Dockerfile
+      network: host
     container_name: tax_calculation_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
     ports:
-      - "8086:8086"
+      - "8087:8086"
     environment:
       - SERVER_PORT=8086
       - SPRING_DATASOURCE_URL=jdbc:h2:mem:taxcalcdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE # Using H2 in-memory
@@ -258,21 +304,33 @@ services:
 
   product-lookup-rust:
     build:
-      context: ../../services/catalog/product-lookup-rust
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/catalog/product-lookup-rust/Dockerfile
+      network: host
+      args:
+        - DATABASE_URL=postgres://admin:secret@host.docker.internal:5432/community_platform
     container_name: product_lookup_rust_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
     ports:
       - "50051:50051"
     environment:
       - DATABASE_URL=postgres://admin:secret@postgres_dev:5432/community_platform
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   inventory-read:
     build:
-      context: ../../services/inventory/inventory-read
-      dockerfile: Dockerfile
+      context: ../../ # Monorepo root
+      dockerfile: services/inventory/inventory-read/Dockerfile
+      network: host
+      args:
+        - DATABASE_URL=postgres://admin:secret@postgres_dev:5432/community_platform
     container_name: inventory_read_dev
+    dns: 8.8.8.8
+
     depends_on:
       - postgres
     ports:
@@ -280,10 +338,14 @@ services:
     environment:
       - DATABASE_URL=postgres://admin:secret@postgres_dev:5432/community_platform
       - GRPC_SERVER_ADDRESS=0.0.0.0:50052
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   kafdrop:
     image: obsidiandynamics/kafdrop:latest
     container_name: kafdrop_dev
+    dns: 8.8.8.8
+
     depends_on:
       - kafka
     ports:
@@ -294,6 +356,8 @@ services:
   prometheus:
     image: prom/prometheus:v2.47.1
     container_name: prometheus_dev
+    dns: 8.8.8.8
+
     volumes:
       - ./prometheus:/etc/prometheus
       - prometheus_data:/prometheus
@@ -306,16 +370,20 @@ services:
   grafana:
     image: grafana/grafana:10.1.5
     container_name: grafana_dev
+    dns: 8.8.8.8
+
     depends_on:
       - prometheus
     ports:
-      - "3000:3000"
+      - "3003:3000"
     volumes:
       - grafana_data:/var/lib/grafana
 
   jaeger:
     image: jaegertracing/all-in-one:1.50
     container_name: jaeger_dev
+    dns: 8.8.8.8
+
     ports:
       - "6831:6831/udp"
       - "16686:16686"
@@ -327,6 +395,8 @@ services:
   minio:
     image: minio/minio:latest
     container_name: minio_dev
+    dns: 8.8.8.8
+
     ports:
       - "9001:9001" # Minio UI
       - "9002:9002" # Minio API

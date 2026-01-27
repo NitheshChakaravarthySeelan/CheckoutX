@@ -1,0 +1,40 @@
+# Global ignores for the entire monorepo build context
+# Ignore Git-related files
+.git
+.gitignore
+
+# Ignore Docker-related files that shouldn't be part of the build context
+**/.dockerignore
+**/Dockerfile
+
+# Ignore temporary files and build artifacts
+.turbo/
+**/node_modules/
+**/dist/
+**/build/
+**/target/
+**/.next/
+.pnpm-store/
+
+# Ignore IDE-specific files
+.idea/
+.vscode/
+
+# Ignore environment variable files
+.env
+.env.*
+
+# Ignore log files
+*.log
+npm-debug.log
+yarn-error.log
+
+# Ignore documentation and infrastructure files (unless specifically needed by a Dockerfile)
+docs/
+infra/
+
+# Other common ignores
+**/README.md
+**/LICENSE
+**/CONTRIBUTING.md
+**/.DS_Store
