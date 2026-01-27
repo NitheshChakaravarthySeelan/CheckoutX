@@ -7,35 +7,32 @@ ENV REQUESTS_TIMEOUT=120
 
 # Install Poetry
 RUN pip install poetry
+RUN pip install poetry-plugin-export
+ENV PATH="/root/.local/bin:$PATH"
 
-# Copy project files
-COPY pyproject.toml poetry.lock ./
+# Copy project files for poetry to use
+COPY ../../services/checkout/checkout-orchestrator/pyproject.toml ./pyproject.toml
+COPY ../../services/checkout/checkout-orchestrator/poetry.lock ./poetry.lock
 
-# Generate poetry.lock to align with pyproject.toml changes
-RUN poetry lock
-
-# Create and activate virtual environment explicitly
-RUN poetry env use python3.12
-RUN poetry run pip install --upgrade pip
-
-# Install dependencies into the virtual environment
-RUN poetry install --no-root --no-interaction --no-ansi
+# Generate requirements.txt from poetry.lock
+RUN poetry export -f requirements.txt --without-hashes -o requirements.txt
 
 # Copy application code
-COPY . .
+COPY ../../services/checkout/checkout-orchestrator/checkout_orchestrator ./checkout_orchestrator
 
 FROM python:3.12-slim-bookworm
 
 WORKDIR /app
 
-# Copy the entire /app directory from the builder stage
-COPY --from=builder /app /app
+# Copy only requirements and application code from builder stage
+COPY --from=builder /app/requirements.txt ./requirements.txt
+COPY --from=builder /app/checkout_orchestrator ./checkout_orchestrator
 
-# Add .venv to PATH (Poetry usually creates it inside /app if configured)
-ENV PATH="/app/.venv/bin:$PATH"
+# Install dependencies from requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Expose port (default for FastAPI/Uvicorn)
 EXPOSE 8000
 
-# Command to run the application using poetry run
-CMD ["poetry", "run", "uvicorn", "checkout_orchestrator.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Command to run the application directly
+CMD ["uvicorn", "checkout_orchestrator.main:app", "--host", "0.0.0.0", "--port", "8000"]

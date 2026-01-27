@@ -6,7 +6,7 @@
       {
         "ordinal": 0,
         "name": "product_id",
-        "type_info": "Uuid"
+        "type_info": "Varchar"
       },
       {
         "ordinal": 1,
@@ -15,7 +15,7 @@
       }
     ],
     "parameters": {
-      "Left": ["Uuid"]
+      "Left": ["Text"]
     },
     "nullable": [false, false]
   },

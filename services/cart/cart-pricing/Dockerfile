@@ -2,13 +2,10 @@
 FROM maven:3.8.5-openjdk-17 AS build
 WORKDIR /app
 
-# Copy the pom.xml and download dependencies
-COPY pom.xml .
-RUN mvn dependency:go-offline
-
-# Copy the rest of the source code and build the application
-COPY src ./src
-RUN mvn clean install -DskipTests
+# Copy the pom.xml and source code
+COPY services/cart/cart-pricing/pom.xml ./pom.xml
+COPY services/cart/cart-pricing/src ./src
+RUN mvn -B package -DskipTests
 
 # Stage 2: Create the final, lightweight container
 FROM eclipse-temurin:17-jre-jammy

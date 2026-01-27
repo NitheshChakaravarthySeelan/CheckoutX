@@ -12,19 +12,22 @@
     "proto:gen": "grpc_tools_node_protoc --plugin=protoc-gen-ts_proto=./node_modules/.bin/protoc-gen-ts_proto --ts_proto_out=./src/proto --ts_proto_opt=esModuleInterop=true,forceLong=String,useEnumNames=true,outputServices=grpc-js,useProtobufjs=false,outputJsonMethods=true --proto_path=../../shared/proto ../../shared/proto/auth_service.proto ../../shared/proto/product.proto ../../shared/proto/product_read_service.proto ../../shared/proto/inventory.proto ../../shared/proto/cart.proto ../../shared/proto/cart_snapshot_service.proto"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.10.0",
+    "@grpc/proto-loader": "^0.1.0",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/auto-instrumentations-node": "^0.44.0",
     "@opentelemetry/sdk-node": "^0.51.0",
+    "autoprefixer": "^10.4.23",
+    "kafkajs": "^2.2.4",
+    "long": "^5.2.3",
     "next": "16.0.0",
+    "postcss": "^8.5.6",
     "prom-client": "^15.1.2",
+    "protobufjs": "^7.3.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "kafkajs": "^2.2.4",
-    "uuid": "^9.0.0",
-    "@grpc/grpc-js": "^1.10.0",
-    "@grpc/proto-loader": "^0.1.0",
-    "long": "^5.2.3",
-    "protobufjs": "^7.3.0"
+    "tailwindcss": "^4.1.18",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -33,16 +36,16 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/supertest": "^2.0.12",
     "@types/uuid": "^9.0.0",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
+    "grpc-tools": "^1.12.4",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
-    "typescript": "^5",
     "supertest": "^6.3.3",
-    "@types/supertest": "^2.0.12",
     "ts-proto": "^1.168.0",
-    "grpc-tools": "^1.12.4"
+    "typescript": "^5"
   }
 }
