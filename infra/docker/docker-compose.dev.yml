@@ -42,12 +42,11 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/catalog/product-write/Dockerfile # Specify the Dockerfile path
-      network: host
     container_name: product_write_dev
     dns: 8.8.8.8
-
     depends_on:
       - postgres
+      - kafka # Add Kafka dependency
     ports:
       - "8081:8081" # Corrected port mapping
     environment:
@@ -56,6 +55,24 @@ services:
       - SPRING_DATASOURCE_USERNAME=admin
       - SPRING_DATASOURCE_PASSWORD=secret
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092 # Correct Kafka address for Docker
+
+  inventory-write:
+    build:
+      context: ../../ # Monorepo root
+      dockerfile: services/inventory/inventory-write/Dockerfile
+    container_name: inventory_write_dev
+    depends_on:
+      - postgres
+      - kafka
+    environment:
+      - DATABASE_URL=postgres://admin:secret@postgres_dev:5432/community_platform
+      - KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092
+      - KAFKA_GROUP_ID=inventory-write-group
+      - PRODUCT_EVENTS_TOPIC=product-events
+      - CHECKOUT_EVENTS_TOPIC=checkout.checkout-events
+
+
 
   cart-crud:
     build:
@@ -76,7 +93,7 @@ services:
       - DB_PASSWORD=secret
       - DB_DATABASE=community_platform
       - DB_PORT=5432
-      - KAFKA_BOOTSTRAP_SERVERS=kafka_dev:9092
+      - KAFKA_BOOTSTRAP_SERVERS=localhost:29092
       - ENABLE_KAFKA=true
       - PRODUCT_READ_GRPC_URL=product-read:9091 # Correct gRPC URL for product-read
       - INVENTORY_READ_GRPC_URL=inventory-read:50052 # Correct gRPC URL for inventory-read

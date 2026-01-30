@@ -1,6 +1,7 @@
 package com.community.catalog.productwrite.application.handler;
 
 import com.community.catalog.productwrite.application.command.CreateProductCommand;
+import com.community.catalog.productwrite.application.event.ProductEventPublisher;
 import com.community.catalog.productwrite.application.error.ForbiddenException;
 import com.community.catalog.productwrite.application.error.ProductAlreadyExistsException;
 import com.community.catalog.productwrite.domain.model.Product;
@@ -18,10 +19,12 @@ import java.util.UUID;
 public class CreateProductHandler {
 
     private final ProductRepository productRepository;
+    private final ProductEventPublisher productEventPublisher; // Inject ProductEventPublisher
     private static final List<String> REQUIRED_ROLES = List.of("ADMIN", "PRODUCT_MANAGER");
 
-    public CreateProductHandler(ProductRepository productRepository) {
+    public CreateProductHandler(ProductRepository productRepository, ProductEventPublisher productEventPublisher) {
         this.productRepository = productRepository;
+        this.productEventPublisher = productEventPublisher;
     }
 
     @Transactional
@@ -54,6 +57,11 @@ public class CreateProductHandler {
                 .build();
 
         // 4. Persist
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+
+        // 5. Publish Event
+        productEventPublisher.publishProductCreatedEvent(savedProduct);
+
+        return savedProduct;
     }
 }

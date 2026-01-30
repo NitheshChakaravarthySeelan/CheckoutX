@@ -1,0 +1,38 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT id, product_id, quantity, created_at, updated_at\n            FROM inventory_items\n            WHERE product_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "product_id",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "quantity",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 4,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": ["Text"]
+    },
+    "nullable": [false, false, false, false, false]
+  },
+  "hash": "f2041995ac658a86f61b3a1de0e5d2856e9c0f11248470036baf22b82b98c2bd"
+}

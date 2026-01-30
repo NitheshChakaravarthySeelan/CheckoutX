@@ -35,20 +35,20 @@ impl InventoryServiceTrait for InventoryGrpcService {
 
         match inventory_result {
             Ok(Some(inventory)) => {
-                let available = inventory.quantity_available >= requested_quantity;
+                let available = inventory.quantity >= requested_quantity; // Changed to inventory.quantity
                 let message = if available {
                     "Stock available".to_string()
                 } else {
                     format!(
                         "Not enough stock. Available: {}, Requested: {}",
-                        inventory.quantity_available, requested_quantity
+                        inventory.quantity, requested_quantity // Changed to inventory.quantity
                     )
                 };
 
                 let reply = CheckStockResponse {
-                    product_id: product_id_str,
+                    product_id: product_id_str, // Changed back to product_id_str
                     available,
-                    current_stock: inventory.quantity_available,
+                    current_stock: inventory.quantity, // Changed to inventory.quantity
                     message,
                 };
                 Ok(Response::new(reply))

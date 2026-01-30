@@ -8,7 +8,7 @@ use time;
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct InventoryItem {
     pub id: Uuid,
-    pub product_id: Uuid,
+    pub product_id: String,
     pub quantity: i32,
     #[serde(with = "time::serde::rfc3339")]
     pub created_at: time::OffsetDateTime,

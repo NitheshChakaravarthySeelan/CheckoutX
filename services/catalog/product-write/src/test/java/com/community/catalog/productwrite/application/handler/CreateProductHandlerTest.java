@@ -1,6 +1,7 @@
 package com.community.catalog.productwrite.application.handler;
 
 import com.community.catalog.productwrite.application.command.CreateProductCommand;
+import com.community.catalog.productwrite.application.event.ProductEventPublisher; // Import ProductEventPublisher
 import com.community.catalog.productwrite.application.error.ForbiddenException;
 import com.community.catalog.productwrite.application.error.ProductAlreadyExistsException;
 import com.community.catalog.productwrite.domain.model.Product;
@@ -26,6 +27,9 @@ class CreateProductHandlerTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock // Mock the ProductEventPublisher
+    private ProductEventPublisher productEventPublisher;
+
     @InjectMocks
     private CreateProductHandler handler;
 
@@ -47,6 +51,7 @@ class CreateProductHandlerTest {
         assertEquals("ACTIVE", result.getStatus());
         verify(productRepository, times(1)).findBySku("GADGET-001");
         verify(productRepository, times(1)).save(any(Product.class));
+        verify(productEventPublisher, times(1)).publishProductCreatedEvent(any(Product.class)); // Verify event is published
     }
 
     @Test
@@ -60,6 +65,7 @@ class CreateProductHandlerTest {
         }, "Should throw ForbiddenException for non-admin user");
 
         verify(productRepository, never()).save(any(Product.class));
+        verify(productEventPublisher, never()).publishProductCreatedEvent(any(Product.class)); // Verify event is NOT published
     }
 
     @Test
@@ -74,6 +80,7 @@ class CreateProductHandlerTest {
         }, "Should throw ProductAlreadyExistsException when SKU exists");
 
         verify(productRepository, never()).save(any(Product.class));
+        verify(productEventPublisher, never()).publishProductCreatedEvent(any(Product.class)); // Verify event is NOT published
     }
 
     @Test
@@ -92,5 +99,6 @@ class CreateProductHandlerTest {
         verify(productRepository).save(productCaptor.capture());
         Product savedProduct = productCaptor.getValue();
         assertEquals("ACTIVE", savedProduct.getStatus(), "Status should default to ACTIVE if not provided");
+        verify(productEventPublisher, times(1)).publishProductCreatedEvent(any(Product.class)); // Verify event is published
     }
 }

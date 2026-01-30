@@ -33,19 +33,19 @@ async fn main() -> std::io::Result<()> {
     // Create the table if it doesn't exist
     sqlx::query(
         r#"
-        CREATE TABLE IF NOT EXISTS inventory (
-            product_id VARCHAR(255) PRIMARY KEY,
-            quantity_available INTEGER NOT NULL CHECK (quantity_available >= 0),
-            CONSTRAINT fk_product
-                FOREIGN KEY(product_id)
-                REFERENCES products(id)
-                ON DELETE CASCADE
+        CREATE TABLE IF NOT EXISTS inventory_items (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            product_id VARCHAR(255) UNIQUE NOT NULL,
+            quantity INTEGER NOT NULL CHECK (quantity >= 0),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_product FOREIGN KEY(product_id) REFERENCES products(id) ON DELETE CASCADE
         );
         "#
     )
     .execute(&pool)
     .await
-    .expect("Failed to create inventory table.");
+    .expect("Failed to create inventory_items table.");
 
     let inventory_service = InventoryService::new(pool.clone());
     let inventory_service_grpc = inventory_service.clone(); // Clone for gRPC server

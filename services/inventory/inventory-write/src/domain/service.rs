@@ -16,7 +16,7 @@ impl InventoryService {
         InventoryService { pool }
     }
 
-    pub async fn update_inventory(&self, product_id: Uuid, request: UpdateStockRequest) -> Result<InventoryItem, Error> {
+    pub async fn update_inventory(&self, product_id: &str, request: UpdateStockRequest) -> Result<InventoryItem, Error> {
         // Here we would typically find the existing inventory item for product_id
         // and update its quantity. If it doesn't exist, we might create it.
         // For simplicity, let's assume we always update an existing one or create if not found.

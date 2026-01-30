@@ -10,8 +10,33 @@ use prometheus::{self, Encoder};
 use inventory_write::api::{health, inventory};
 use inventory_write::domain::service::InventoryService;
 use inventory_write::telemetry::{init_subscriber, setup_metrics_recorder, TracingLogger};
+use inventory_write::events::ProductCreatedEvent; // Import ProductCreatedEvent
 
 use inventory_write::kafka_consumer;
+
+// Function to initialize database schema
+async fn init_db_schema(pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS inventory_items (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            product_id VARCHAR(255) UNIQUE NOT NULL,
+            quantity INTEGER NOT NULL CHECK (quantity >= 0),
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT fk_product_id
+                FOREIGN KEY (product_id)
+                REFERENCES products (id)
+                ON DELETE CASCADE
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS inventory_items_product_id_key ON inventory_items (product_id);
+        "#
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
 
 async fn metrics_endpoint(prometheus_registry: web::Data<prometheus::Registry>) -> HttpResponse {
     let mut buffer = vec![];
@@ -34,12 +59,28 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to connect to Postgres.");
 
+    // Initialize database schema
+    init_db_schema(&pool).await
+        .expect("Failed to initialize database schema");
+
     let inventory_service = InventoryService::new(pool.clone());
 
-    // Start Kafka consumer in a background thread
+    // --- Kafka Consumer Setup ---
+    let product_events_topic = env::var("PRODUCT_EVENTS_TOPIC")
+        .unwrap_or_else(|_| "product-events".to_string());
+    let checkout_events_topic = env::var("CHECKOUT_EVENTS_TOPIC")
+        .unwrap_or_else(|_| "checkout.checkout-events".to_string());
+    let kafka_group_id = env::var("KAFKA_GROUP_ID")
+        .unwrap_or_else(|_| "inventory-write-group".to_string());
+
     let pool_clone = pool.clone();
     tokio::spawn(async move {
-        kafka_consumer::run_kafka_consumer(pool_clone).await;
+        kafka_consumer::run_kafka_consumer(
+            pool_clone,
+            &product_events_topic,
+            &checkout_events_topic,
+            &kafka_group_id
+        ).await;
     });
 
     HttpServer::new(move || {
@@ -54,5 +95,7 @@ async fn main() -> std::io::Result<()> {
     })
     .bind(("0.0.0.0", 8080))? // Use port 8080 by default
     .run()
-    .await
+    .await?;
+
+    Ok(())
 }
