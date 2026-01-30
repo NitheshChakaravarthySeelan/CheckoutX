@@ -2,21 +2,23 @@ FROM rust:1.78-slim-bookworm as builder
 
 WORKDIR /app
 
-# Copy Cargo.toml and Cargo.lock
-COPY Cargo.toml Cargo.lock ./
+# Copy manifest files
+COPY services/inventory/inventory-write/Cargo.toml ./Cargo.toml
+COPY services/inventory/inventory-write/Cargo.lock ./Cargo.lock
 
-# Build dependencies (this layer will be cached)
-RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release
-RUN rm -rf target/release/.fingerprint target/release/.cargo-lock target/release/deps src
+# Copy shared proto definitions
+COPY shared/proto/inventory.proto ./shared/proto/inventory.proto
 
-# Copy source code and build final binary
-COPY . .
+# Copy actual source code
+COPY services/inventory/inventory-write/src ./src
+
+# Build the application
 RUN cargo build --release
 
 FROM debian:bookworm-slim
 
 # Copy the compiled binary from the builder stage
-COPY --from=builder /app/target/release/inventory-write /usr/local/bin/inventory-write
+COPY --from=builder /app/target/release/inventory-write /usr/local/bin/inventory-read
 
-# Command to run the application
-CMD ["/usr/local/bin/inventory-write"]
+# Set the command to run the application
+CMD ["/usr/local/bin/inventory-read"]

@@ -1,42 +1,45 @@
-FROM rust:latest as builder
+# ---------- Stage 1: Build ----------
+FROM rust:1.93.0-bookworm AS builder
 
-# Accept DATABASE_URL as a build argument
-ARG DATABASE_URL
-ENV DATABASE_URL=${DATABASE_URL}
-# Enable SQLX offline mode
+# Enforce SQLx offline mode
 ENV SQLX_OFFLINE=true
 
-# Install protoc compiler
-RUN apt-get update && apt-get install -y protobuf-compiler
-
-# Copy pnpm-workspace.yaml to the root for workspace detection by build.rs
-COPY pnpm-workspace.yaml /pnpm-workspace.yaml
+# Install system dependencies
+RUN apt-get update && apt-get install -y protobuf-compiler && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy the .sqlx directory for offline mode
+COPY pnpm-workspace.yaml /pnpm-workspace.yaml
+
+# --- Copy manifests first (better caching) ---
+COPY services/inventory/inventory-read/Cargo.toml ./Cargo.toml
+
+# If you have a workspace Cargo.toml at repo root, copy it too:
+# COPY Cargo.toml ./Cargo.toml
+
+# --- Copy SQLx offline cache ---
 COPY services/inventory/inventory-read/.sqlx ./.sqlx
 
-# Copy manifest files
-COPY ../../services/inventory/inventory-read/Cargo.toml ./Cargo.toml
-COPY ../../services/inventory/inventory-read/Cargo.lock ./Cargo.lock
+# --- Copy build script and sources ---
+COPY services/inventory/inventory-read/build.rs ./build.rs
+COPY services/inventory/inventory-read/src ./src
 
-# Copy build.rs (for proto generation)
-COPY ../../services/inventory/inventory-read/build.rs ./build.rs
+# --- Copy shared proto definitions ---
+COPY shared/proto /shared/proto
 
-# Copy shared proto definitions
-COPY ../../shared/proto /shared/proto
+# --- Build ---
+RUN cargo build --release --bin inventory-read
 
-# Copy actual source code
-COPY ../../services/inventory/inventory-read/src ./src
 
-# Build the application
-RUN cargo build --release
-
+# ---------- Stage 2: Runtime ----------
 FROM debian:bookworm-slim
 
-# Copy the compiled binary from the builder stage
+# Optional but recommended: SSL certs if you talk to HTTPS / Postgres TLS
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Copy the compiled binary
 COPY --from=builder /app/target/release/inventory-read /usr/local/bin/inventory-read
 
-# Set the command to run the application
+# Run it
 CMD ["/usr/local/bin/inventory-read"]
+

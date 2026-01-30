@@ -8,5 +8,6 @@ pub mod error;
 pub mod infrastructure;
 pub mod telemetry;
 pub mod kafka_consumer;
+pub mod events;
 
 

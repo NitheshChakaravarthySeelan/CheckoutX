@@ -19,8 +19,8 @@ impl InventoryService {
         let inventory = sqlx::query_as!(
             Inventory,
             r#"
-            SELECT product_id, quantity_available
-            FROM inventory
+            SELECT id, product_id, quantity, created_at, updated_at
+            FROM inventory_items
             WHERE product_id = $1
             "#,
             product_id
