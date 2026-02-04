@@ -8,6 +8,7 @@ import com.community.users.authservice.domain.repository.UserRepository;
 import com.community.users.authservice.infrastructure.security.JWTService;
 import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID; // Add this import
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -65,6 +66,7 @@ public class AuthService {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setId(UUID.randomUUID()); // Assign UUID object directly
 
         user.setRoles(
                 Collections.singletonList(Role.USER)); // Corrected to use Role.USER enum constant

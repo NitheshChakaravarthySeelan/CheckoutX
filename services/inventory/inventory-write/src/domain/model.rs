@@ -7,7 +7,7 @@ use time;
 
 #[derive(Debug, FromRow, Serialize, Deserialize)]
 pub struct InventoryItem {
-    pub id: Uuid,
+    pub id: i32,
     pub product_id: String,
     pub quantity: i32,
     #[serde(with = "time::serde::rfc3339")]

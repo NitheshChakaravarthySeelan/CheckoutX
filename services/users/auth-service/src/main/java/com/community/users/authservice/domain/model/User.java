@@ -6,13 +6,12 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID; // Import UUID
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder; // Added for builder pattern
@@ -29,15 +28,15 @@ import org.springframework.security.core.userdetails.UserDetails;
 @AllArgsConstructor
 @Builder // Enable builder pattern
 public class User implements UserDetails {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id private UUID id;
 
+    @Column(name = "username", nullable = false, unique = true)
     private String username;
 
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
     private String password;
 
     @ElementCollection(targetClass = Role.class)

@@ -1,6 +1,7 @@
 package com.community.users.authservice.application.dto;
 
 import java.util.List;
+import java.util.UUID; // Add this import
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class UserLoggedInDTO {
     private String jwtToken;
-    private Long userId;
+    private UUID userId;
     private UserDTO userName;
     private String email;
     private List<String> roles;
