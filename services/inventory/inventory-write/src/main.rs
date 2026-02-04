@@ -14,29 +14,7 @@ use inventory_write::events::ProductCreatedEvent; // Import ProductCreatedEvent
 
 use inventory_write::kafka_consumer;
 
-// Function to initialize database schema
-async fn init_db_schema(pool: &PgPool) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS inventory_items (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            product_id VARCHAR(255) UNIQUE NOT NULL,
-            quantity INTEGER NOT NULL CHECK (quantity >= 0),
-            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT fk_product_id
-                FOREIGN KEY (product_id)
-                REFERENCES products (id)
-                ON DELETE CASCADE
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS inventory_items_product_id_key ON inventory_items (product_id);
-        "#
-    )
-    .execute(pool)
-    .await?;
 
-    Ok(())
-}
 
 async fn metrics_endpoint(prometheus_registry: web::Data<prometheus::Registry>) -> HttpResponse {
     let mut buffer = vec![];
@@ -59,9 +37,11 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("Failed to connect to Postgres.");
 
-    // Initialize database schema
-    init_db_schema(&pool).await
-        .expect("Failed to initialize database schema");
+    // Run database migrations
+    sqlx::migrate!().run(&pool).await
+        .expect("Failed to run database migrations");
+
+
 
     let inventory_service = InventoryService::new(pool.clone());
 

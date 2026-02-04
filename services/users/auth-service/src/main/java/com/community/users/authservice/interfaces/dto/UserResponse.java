@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @AllArgsConstructor
 public class UserResponse {
-    private Long id;
+    private String id;
     private String username;
     private String email;
 
@@ -18,6 +18,6 @@ public class UserResponse {
      * @return A new UserResponse object.
      */
     public static UserResponse fromUser(User user) {
-        return new UserResponse(user.getId(), user.getUsername(), user.getEmail());
+        return new UserResponse(user.getId().toString(), user.getUsername(), user.getEmail());
     }
 }

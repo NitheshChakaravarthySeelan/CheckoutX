@@ -1,8 +1,8 @@
 package com.community.users.authservice.grpc;
 
 import auth_service.AuthServiceGrpc;
-import auth_service.AuthServiceOuterClass.ValidateTokenRequest;
-import auth_service.AuthServiceOuterClass.ValidateTokenResponse;
+import auth_service.ValidateTokenRequest;
+import auth_service.ValidateTokenResponse;
 import com.community.users.authservice.application.service.AuthService;
 import com.community.users.authservice.domain.model.Role;
 import com.community.users.authservice.domain.model.User;

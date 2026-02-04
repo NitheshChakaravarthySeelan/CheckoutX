@@ -42,6 +42,7 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/catalog/product-write/Dockerfile # Specify the Dockerfile path
+      network: host
     container_name: product_write_dev
     dns: 8.8.8.8
     depends_on:

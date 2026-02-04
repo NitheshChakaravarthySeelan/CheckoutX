@@ -146,8 +146,8 @@
                 <version>1.7.1</version>
             </extension>
         </extensions>
-        <plugins>
-            <plugin>
+    <plugins>
+        <plugin>
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>0.6.1</version>
@@ -155,7 +155,7 @@
                     <protocArtifact>com.google.protobuf:protoc:3.21.7:exe:${os.detected.classifier}</protocArtifact>
                     <pluginId>grpc-java</pluginId>
                     <pluginArtifact>io.grpc:protoc-gen-grpc-java:1.50.2:exe:${os.detected.classifier}</pluginArtifact>
-                    <protoSourceRoot>${basedir}/shared/proto</protoSourceRoot>
+          <protoSourceRoot>${project.basedir}/../../../shared/proto</protoSourceRoot>
                     <outputDirectory>${project.build.directory}/generated-sources/protobuf/java</outputDirectory>
                     <clearOutputDirectory>false</clearOutputDirectory>
                 </configuration>
