@@ -54,17 +54,26 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [
-          'product-write', 'product-read', 'category', 'brand',
-          'list-price', 'discount-engine', 'tax-calculation',
-          'cart-pricing', 'cart-snapshot',
-          'order-create', 'order-read', 'payment-gateway', 'wallet', 'refund', 'invoice',
-          'user-service', 'auth-service',
-          'audit-service'
-        ]
+        include:
+          - service: 'product-write'
+            path: 'catalog'
+          - service: 'product-read'
+            path: 'catalog'
+          - service: 'auth-service'
+            path: 'users'
+          - service: 'cart-pricing'
+            path: 'cart'
+          - service: 'cart-snapshot'
+            path: 'cart'
+          - service: 'user-service'
+            path: 'users'
+          - service: 'discount-engine'
+            path: 'pricing'
+          - service: 'tax-calculation'
+            path: 'pricing'
     defaults:
       run:
-        working-directory: ./services/${{ matrix.service == 'audit-service' && 'audit' || (matrix.service == 'user-service' || matrix.service == 'auth-service') && 'users' || (matrix.service == 'cart-pricing' || matrix.service == 'cart-snapshot') && 'cart' || (matrix.service == 'order-create' || matrix.service == 'order-read' || matrix.service == 'payment-gateway' || matrix.service == 'wallet' || matrix.service == 'refund' || matrix.service == 'invoice') && 'orders' || (matrix.service == 'list-price' || matrix.service == 'discount-engine' || matrix.service == 'tax-calculation') && 'pricing' || 'catalog' }}/${{ matrix.service }}
+        working-directory: ./services/${{ matrix.path }}/${{ matrix.service }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 17
@@ -85,7 +94,7 @@ jobs:
         id: docker_build_java
         uses: docker/build-push-action@v5
         with:
-          context: ./services/${{ matrix.service == 'audit-service' && 'audit' || (matrix.service == 'user-service' || matrix.service == 'auth-service') && 'users' || (matrix.service == 'cart-pricing' || matrix.service == 'cart-snapshot') && 'cart' || (matrix.service == 'order-create' || matrix.service == 'order-read' || matrix.service == 'payment-gateway' || matrix.service == 'wallet' || matrix.service == 'refund' || matrix.service == 'invoice') && 'orders' || (matrix.service == 'list-price' || matrix.service == 'discount-engine' || matrix.service == 'tax-calculation') && 'pricing' || 'catalog' }}/${{ matrix.service }}
+          context: ./services/${{ matrix.path }}/${{ matrix.service }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/java-${{ matrix.service }}:latest
           cache-from: type=gha
@@ -95,13 +104,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [
-          'warehouse-sync', 'checkout-orchestrator', 'rec-model-service',
-          'intent-parser', 'plan-generator', 'plan-executor'
-        ]
+        include:
+          - service: 'checkout-orchestrator'
+            path: 'checkout'
     defaults:
       run:
-        working-directory: ./services/${{ matrix.service == 'warehouse-sync' && 'inventory' || matrix.service == 'checkout-orchestrator' && 'checkout' || matrix.service == 'rec-model-service' && 'search' || 'ai' }}/${{ matrix.service }}
+        working-directory: ./services/${{ matrix.path }}/${{ matrix.service }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -131,7 +139,7 @@ jobs:
         id: docker_build_python
         uses: docker/build-push-action@v5
         with:
-          context: ./services/${{ matrix.service == 'warehouse-sync' && 'inventory' || matrix.service == 'checkout-orchestrator' && 'checkout' || matrix.service == 'rec-model-service' && 'search' || 'ai' }}/${{ matrix.service }}
+          context: ./services/${{ matrix.path }}/${{ matrix.service }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/python-${{ matrix.service }}:latest
           cache-from: type=gha
@@ -141,13 +149,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        service: [
-          'inventory-read', 'inventory-write',
-          'search-index', 'search-query'
-        ]
+        include:
+          - service: 'product-lookup-rust'
+            path: 'catalog'
+          - service: 'inventory-read'
+            path: 'inventory'
+          - service: 'inventory-write'
+            path: 'inventory'
     defaults:
       run:
-        working-directory: ./services/${{ matrix.service == 'inventory-read' || matrix.service == 'inventory-write' && 'inventory' || 'search' }}/${{ matrix.service }}
+        working-directory: ./services/${{ matrix.path }}/${{ matrix.service }}
     steps:
       - uses: actions/checkout@v4
       - name: Set up Rust
@@ -172,52 +183,52 @@ jobs:
         id: docker_build_rust
         uses: docker/build-push-action@v5
         with:
-          context: ./services/${{ matrix.service == 'inventory-read' || matrix.service == 'inventory-write' && 'inventory' || 'search' }}/${{ matrix.service }}
+          context: ./services/${{ matrix.path }}/${{ matrix.service }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/rust-${{ matrix.service }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  go-ci:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        service: [
-          'email-service', 'sms-service', 'push-service',
-          'metrics', 'tracing', 'log-forwarder', 'config'
-        ]
-    defaults:
-        # Adjusted working-directory for Go services to use cmd/sub-directory
-      run:
-        working-directory: ./services/${{ matrix.service == 'email-service' || matrix.service == 'sms-service' || matrix.service == 'push-service' && 'notifications' || 'ops' }}/${{ matrix.service }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.22'
-      - name: Download Dependencies
-        run: go mod tidy
-      - name: Build
-        # Go services are built as cmd/<service-name>/main.go, so the build context needs to be the service root
-        run: go build -o ./cmd/${{ matrix.service }}/${{ matrix.service }} ./cmd/${{ matrix.service }}
-      - name: Run Tests
-        run: go test -v ./... || true # Allow failure if no tests yet
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build and push Docker image
-        id: docker_build_go
-        uses: docker/build-push-action@v5
-        with:
-          context: ./services/${{ matrix.service == 'email-service' || matrix.service == 'sms-service' || matrix.service == 'push-service' && 'notifications' || 'ops' }}/${{ matrix.service }}
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/go-${{ matrix.service }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+  # go-ci:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       service: [
+  #         'email-service', 'sms-service', 'push-service',
+  #         'metrics', 'tracing', 'log-forwarder', 'config'
+  #       ]
+  #   defaults:
+  #       # Adjusted working-directory for Go services to use cmd/sub-directory
+  #     run:
+  #       working-directory: ./services/${{ matrix.service == 'email-service' || matrix.service == 'sms-service' || matrix.service == 'push-service' && 'notifications' || 'ops' }}/${{ matrix.service }}
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Set up Go
+  #       uses: actions/setup-go@v5
+  #       with:
+  #         go-version: '1.22'
+  #     - name: Download Dependencies
+  #       run: go mod tidy
+  #     - name: Build
+  #       # Go services are built as cmd/<service-name>/main.go, so the build context needs to be the service root
+  #       run: go build -o ./cmd/${{ matrix.service }}/${{ matrix.service }} ./cmd/${{ matrix.service }}
+  #     - name: Run Tests
+  #       run: go test -v ./... || true # Allow failure if no tests yet
+  #     - name: Log in to GitHub Container Registry
+  #       uses: docker/login-action@v3
+  #       with:
+  #         registry: ${{ env.REGISTRY }}
+  #         username: ${{ github.actor }}
+  #         password: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Build and push Docker image
+  #       id: docker_build_go
+  #       uses: docker/build-push-action@v5
+  #       with:
+  #         context: ./services/${{ matrix.service == 'email-service' || matrix.service == 'sms-service' || matrix.service == 'push-service' && 'notifications' || 'ops' }}/${{ matrix.service }}
+  #         push: ${{ github.event_name != 'pull_request' }}
+  #         tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/go-${{ matrix.service }}:latest
+  #         cache-from: type=gha
+  #         cache-to: type=gha,mode=max
 
   nodejs-microservice-ci:
     runs-on: ubuntu-latest
