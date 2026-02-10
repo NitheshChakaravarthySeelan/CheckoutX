@@ -42,7 +42,7 @@ public class CreateProductHandler {
 
         // 3. Enrich and Map
         Product product = Product.builder()
-                .id(UUID.randomUUID().toString())
+                .id(UUID.randomUUID())
                 .name(command.getName())
                 .description(command.getDescription())
                 .price(command.getPrice())

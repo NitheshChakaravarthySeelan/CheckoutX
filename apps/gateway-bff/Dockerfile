@@ -8,7 +8,7 @@ COPY . .
 # Install pnpm and dependencies, then build the specific service
 RUN npm install -g pnpm
 ENV CI=true
-RUN pnpm install --filter=gateway-bff
+RUN pnpm install --filter=gateway-bff --ignore-scripts
 RUN pnpm --filter=gateway-bff run build
 
 # Stage 2: Create the final, lightweight production container
@@ -27,4 +27,4 @@ ENV PORT 3000
 
 # Start the Next.js server
 # server.js is now expected to be directly in /app
-CMD ["pnpm", "dev"]
+CMD ["node", "server.js"]

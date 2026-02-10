@@ -51,10 +51,10 @@ export class CartGrpcService {
       }
 
       const cart = await this.cartBusinessService.addItem(
-        Number(userId),
+        userId,
         productId,
         quantity,
-      ); // userId needs conversion
+      );
       const response: CartResponse = {
         cart: {
           userId: cart.userId.toString(), // Convert back to string for proto
@@ -91,7 +91,7 @@ export class CartGrpcService {
         return;
       }
       const cart = await this.cartBusinessService.updateItemQuantity(
-        Number(userId),
+        userId,
         productId,
         quantity,
       );
@@ -137,10 +137,7 @@ export class CartGrpcService {
         );
         return;
       }
-      const cart = await this.cartBusinessService.removeItem(
-        Number(userId),
-        productId,
-      );
+      const cart = await this.cartBusinessService.removeItem(userId, productId);
       if (!cart) {
         callback(
           { code: grpc.status.NOT_FOUND, message: "Cart or item not found" },
@@ -180,9 +177,7 @@ export class CartGrpcService {
         );
         return;
       }
-      const cartDetails = await this.cartBusinessService.getCart(
-        Number(userId),
-      ); // Still Number(userId) here for existing business service
+      const cartDetails = await this.cartBusinessService.getCart(userId);
       if (!cartDetails) {
         callback(
           { code: grpc.status.NOT_FOUND, message: "Cart not found" },

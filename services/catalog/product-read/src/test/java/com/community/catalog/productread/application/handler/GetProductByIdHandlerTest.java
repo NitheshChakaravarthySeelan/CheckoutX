@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -29,9 +30,9 @@ class GetProductByIdHandlerTest {
     @Test
     void testHandle_WhenProductExists_ShouldReturnProductDTO() {
         // Arrange
-        String productId = "product-xyz-123";
+        String productId = "a1b2c3d4-e5f6-7890-1234-567890abcdef"; // Valid UUID
         ProductView productView = ProductView.builder()
-                .id(productId)
+                .id(UUID.fromString(productId))
                 .name("Test Product")
                 .price(new BigDecimal("99.99"))
                 .sku("TEST-001")
@@ -41,7 +42,7 @@ class GetProductByIdHandlerTest {
                 .build();
 
         GetProductByIdQuery query = new GetProductByIdQuery(productId);
-        when(productViewRepository.findById(productId)).thenReturn(Optional.of(productView));
+        when(productViewRepository.findById(UUID.fromString(productId))).thenReturn(Optional.of(productView));
 
         // Act
         Optional<ProductDTO> result = handler.handle(query);
@@ -57,9 +58,9 @@ class GetProductByIdHandlerTest {
     @Test
     void testHandle_WhenProductDoesNotExist_ShouldReturnEmptyOptional() {
         // Arrange
-        String productId = "product-xyz-456";
+        String productId = "f6e7d8c9-b0a1-2345-6789-0123456789ab"; // Valid UUID
         GetProductByIdQuery query = new GetProductByIdQuery(productId);
-        when(productViewRepository.findById(productId)).thenReturn(Optional.empty());
+        when(productViewRepository.findById(UUID.fromString(productId))).thenReturn(Optional.empty());
 
         // Act
         Optional<ProductDTO> result = handler.handle(query);
@@ -68,4 +69,3 @@ class GetProductByIdHandlerTest {
         assertTrue(result.isEmpty(), "Result should be empty for a non-existent product");
     }
 }
-

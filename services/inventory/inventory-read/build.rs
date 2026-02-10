@@ -6,7 +6,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Adjust depth ONCE, commit it, never think again
     let workspace_root = crate_root
         .ancestors()
-        .nth(4) // <- number of levels to repo root
+        .nth(3) // <- number of levels to repo root
         .expect("Failed to locate workspace root");
 
     let shared_proto_dir = workspace_root.join("shared/proto");

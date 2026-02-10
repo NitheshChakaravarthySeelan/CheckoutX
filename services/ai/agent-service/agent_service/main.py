@@ -13,6 +13,14 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 import uuid
 
+# Helper function to validate UUID strings
+def is_valid_uuid(uuid_string: str) -> bool:
+    try:
+        uuid.UUID(uuid_string, version=4)
+        return True
+    except ValueError:
+        return False
+
 # Client Imports
 from agent_service.clients.product_lookup_client import product_lookup_client
 from agent_service.clients.product_read_client import product_read_client
@@ -54,9 +62,15 @@ async def add_to_cart(product_id: str, quantity: int) -> Dict[str, Any]:
     Returns:
         The updated state of the shopping cart.
     """
-    print(f"Adding {quantity} of product {product_id} to the cart.")
+    if not is_valid_uuid(product_id):
+        return {"error": f"Invalid product ID format: {product_id}"}
+    
     # TODO: Get user_id from agent context
     user_id = "test-user-123"
+    if not is_valid_uuid(user_id):
+        return {"error": f"Invalid user ID format: {user_id}"} # This should not happen with a hardcoded ID
+    
+    print(f"Adding {quantity} of product {product_id} to the cart.")
     updated_cart = await cart_client.add_item_to_cart(user_id=user_id, product_id=product_id, quantity=quantity)
     return updated_cart
 
@@ -97,6 +111,9 @@ async def get_product_details(product_id: str) -> Dict[str, Any]:
     Returns:
         The details of the product.
     """
+    if not is_valid_uuid(product_id):
+        return {"error": f"Invalid product ID format: {product_id}"}
+    
     print(f"Getting details for product {product_id}")
 
     details = await product_lookup_client.get_product_by_id(product_id)
@@ -120,9 +137,15 @@ async def update_cart(product_id: str, quantity: int) -> Dict[str, Any]:
     Returns:
         The updated state of the shopping cart.
     """
-    print(f"Updating quantity of product {product_id} to {quantity}.")
+    if not is_valid_uuid(product_id):
+        return {"error": f"Invalid product ID format: {product_id}"}
+    
     # TODO: Get user_id from agent context
     user_id = "test-user-123"
+    if not is_valid_uuid(user_id):
+        return {"error": f"Invalid user ID format: {user_id}"} # This should not happen with a hardcoded ID
+    
+    print(f"Updating quantity of product {product_id} to {quantity}.")
     updated_cart = await cart_client.update_item_quantity(user_id=user_id, product_id=product_id, quantity=quantity)
     return updated_cart
 
@@ -137,9 +160,15 @@ async def remove_from_cart(product_id: str) -> Dict[str, Any]:
     Returns:
         The updated state of the shopping cart.
     """
-    print(f"Removing product {product_id} from the cart.")
+    if not is_valid_uuid(product_id):
+        return {"error": f"Invalid product ID format: {product_id}"}
+    
     # TODO: Get user_id from agent context
     user_id = "test-user-123"
+    if not is_valid_uuid(user_id):
+        return {"error": f"Invalid user ID format: {user_id}"} # This should not happen with a hardcoded ID
+    
+    print(f"Removing product {product_id} from the cart.")
     updated_cart = await cart_client.remove_item_from_cart(user_id=user_id, product_id=product_id)
     return updated_cart
 
@@ -154,6 +183,9 @@ async def view_cart() -> Dict[str, Any]:
     print("Viewing cart.")
     # TODO: Get user_id from agent context
     user_id = "test-user-123"
+    if not is_valid_uuid(user_id):
+        return {"error": f"Invalid user ID format: {user_id}"} # This should not happen with a hardcoded ID
+    
     cart = await cart_client.get_cart(user_id=user_id)
     return cart
 

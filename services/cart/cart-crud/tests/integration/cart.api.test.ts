@@ -5,6 +5,28 @@ import { CartService } from "../../src/services/cart.service.js"; // Use type im
 import type { Cart } from "../../src/models/cart.js"; // Use type import
 import express from "express"; // Import express
 
+// Create a direct reference to the mock function for axios.post
+const mockAxiosPost = jest.fn((url, data) => {
+  if (url.includes("/calculate-discounts")) {
+    return Promise.resolve({ data: { total_discount_cents: 100 } }); // Mock a 100 cent discount
+  }
+  if (url.includes("/calculate-tax")) {
+    return Promise.resolve({ data: { tax_cents: 50 } }); // Mock a 50 cent tax
+  }
+  return Promise.reject(new Error("Unknown axios post URL"));
+});
+
+// Mock axios globally for this test file, injecting our mockAxiosPost
+jest.mock("axios", () => ({
+  __esModule: true, // Important for ESM modules
+  default: {
+    post: mockAxiosPost, // Use our direct reference here
+  },
+}));
+
+// No need to import axios directly in the test file, as we're not using it to call post.
+// If other methods from axios were used, they would need to be mocked here too.
+
 // --- Mocking CartService ---
 const mockCartService = {
   getOrCreateCart: jest.fn(),
@@ -15,11 +37,16 @@ const mockCartService = {
 } as any; // Cast to any to bypass strict type checking for the mock
 
 describe("Cart API", () => {
-  const userId = 123;
+  const userId = "42674a96-69aa-431e-839d-47c75dcdc0e7";
+  const productId = "07ea8f2b-310e-45ed-ba69-8cd3e3ebaebc";
   let app: express.Application; // Declare app here
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAxiosPost.mockClear(); // Now correctly clears the mock calls
+
+    // The mockImplementation is now done globally, but we might want to override it per-test if needed.
+    // For now, we'll keep the global mock and just clear calls.
 
     // Create a new express app for each test
     app = express();
@@ -34,16 +61,16 @@ describe("Cart API", () => {
     mockCartService.getCart.mockResolvedValue(null);
 
     // Act
-    const res = await request(app).get(`/api/v1/carts/999`);
+    const res = await request(app).get(`/api/v1/carts/${userId}`);
 
     // Assert
     expect(res.statusCode).toEqual(404);
-    expect(mockCartService.getCart).toHaveBeenCalledWith(999);
+    expect(mockCartService.getCart).toHaveBeenCalledWith(userId);
   });
 
   it("should add an item to the cart", async () => {
     // Arrange
-    const newItem = { productId: "101", quantity: 1 };
+    const newItem = { productId: productId, quantity: 1 };
     const expectedCart: Cart = {
       id: 1,
       userId,
@@ -62,42 +89,42 @@ describe("Cart API", () => {
     expect(res.statusCode).toEqual(201);
     expect(res.body.userId).toEqual(userId);
     expect(res.body.items.length).toBe(1);
-    expect(res.body.items[0].productId).toBe("101");
+    expect(res.body.items[0].productId).toBe(productId);
     expect(mockCartService.addItem).toHaveBeenCalledWith(
       userId,
-      newItem.productId,
+      productId,
       newItem.quantity,
     );
   });
 
   it("should update an item quantity", async () => {
     // Arrange
-    const update = { productId: "101", quantity: 3 };
+    const update = { productId: productId, quantity: 3 };
     const existingCart: Cart = {
       id: 1,
       userId,
-      items: [{ productId: "101", quantity: 1 }],
+      items: [{ productId: productId, quantity: 1 }],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
     const updatedCart: Cart = {
       ...existingCart,
-      items: [{ productId: "101", quantity: 3 }],
+      items: [{ productId: productId, quantity: 3 }],
     };
     mockCartService.updateItemQuantity.mockResolvedValue(updatedCart);
 
     // Act
     const res = await request(app)
-      .put(`/api/v1/carts/${userId}/items/101`)
+      .put(`/api/v1/carts/${userId}/items/${productId}`)
       .send(update);
 
     // Assert
     expect(res.statusCode).toEqual(200);
-    const item = res.body.items.find((i: any) => i.productId === "101");
+    const item = res.body.items.find((i: any) => i.productId === productId);
     expect(item.quantity).toEqual(3);
     expect(mockCartService.updateItemQuantity).toHaveBeenCalledWith(
       userId,
-      "101",
+      productId,
       update.quantity,
     );
   });
@@ -107,7 +134,7 @@ describe("Cart API", () => {
     const existingCart: Cart = {
       id: 1,
       userId,
-      items: [{ id: 1, productId: "101", quantity: 1 }],
+      items: [{ id: 1, productId: productId, quantity: 1 }],
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -115,11 +142,13 @@ describe("Cart API", () => {
     mockCartService.removeItem.mockResolvedValue(updatedCart);
 
     // Act
-    const res = await request(app).delete(`/api/v1/carts/${userId}/items/101`);
+    const res = await request(app).delete(
+      `/api/v1/carts/${userId}/items/${productId}`,
+    );
 
     // Assert
     expect(res.statusCode).toEqual(200);
     expect(res.body.items.length).toBe(0);
-    expect(mockCartService.removeItem).toHaveBeenCalledWith(userId, "101");
+    expect(mockCartService.removeItem).toHaveBeenCalledWith(userId, productId);
   });
 });

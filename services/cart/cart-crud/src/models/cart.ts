@@ -10,7 +10,7 @@ export interface CartItem {
 
 export interface Cart {
   id: number;
-  userId: number;
+  userId: string;
   items: CartItem[];
   createdAt: Date;
   updatedAt: Date;

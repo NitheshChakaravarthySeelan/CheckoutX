@@ -15,7 +15,7 @@ export class PostgresCartRepository implements ICartRepository {
     });
   }
 
-  async findByUserId(userId: number): Promise<Cart | null> {
+  async findByUserId(userId: string): Promise<Cart | null> {
     const result = await this.pool.query(
       "SELECT * FROM carts WHERE user_id = $1",
       [userId],
@@ -33,7 +33,7 @@ export class PostgresCartRepository implements ICartRepository {
     return null;
   }
 
-  async createCart(userId: number): Promise<Cart> {
+  async createCart(userId: string): Promise<Cart> {
     const result = await this.pool.query(
       "INSERT INTO carts (user_id) VALUES ($1) RETURNING *",
       [userId],
@@ -50,8 +50,8 @@ export class PostgresCartRepository implements ICartRepository {
 
   async updateCart(cart: Cart): Promise<Cart> {
     const result = await this.pool.query(
-      "UPDATE carts SET items = $1, updated_at = NOW() WHERE id = $2 RETURNING *",
-      [JSON.stringify(cart.items), cart.id],
+      "UPDATE carts SET items = $1, updated_at = NOW() WHERE user_id = $2 RETURNING *", // Changed WHERE id = $2 to WHERE user_id = $2
+      [JSON.stringify(cart.items), cart.userId], // Changed cart.id to cart.userId
     );
     const row = result.rows[0];
     return {
@@ -67,11 +67,11 @@ export class PostgresCartRepository implements ICartRepository {
     return this.updateCart(cart);
   }
 
-  async deleteCart(userId: number): Promise<void> {
+  async deleteCart(userId: string): Promise<void> {
     await this.pool.query("DELETE FROM carts WHERE user_id = $1", [userId]);
   }
 
-  async addItemToCart(userId: number, item: CartItem): Promise<Cart> {
+  async addItemToCart(userId: string, item: CartItem): Promise<Cart> {
     let cart = await this.findByUserId(userId);
     if (!cart) {
       cart = await this.createCart(userId);
@@ -90,7 +90,7 @@ export class PostgresCartRepository implements ICartRepository {
   }
 
   async updateItemQuantity(
-    userId: number,
+    userId: string,
     productId: string,
     quantity: number,
   ): Promise<Cart | null> {
@@ -110,7 +110,7 @@ export class PostgresCartRepository implements ICartRepository {
   }
 
   async removeItemFromCart(
-    userId: number,
+    userId: string,
     productId: string,
   ): Promise<Cart | null> {
     let cart = await this.findByUserId(userId);

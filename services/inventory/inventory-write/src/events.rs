@@ -1,11 +1,12 @@
 use serde::Deserialize;
 use std::fmt::{self, Display};
 use std::error::Error;
+use uuid::Uuid; // Added Uuid import
 
 #[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")] // Match Java's camelCase if used
 pub struct ProductCreatedEvent {
-    pub product_id: String, // Matches the Rust code's naming style
+    pub product_id: Uuid, // Changed to Uuid
     pub sku: String,
     pub name: String,
     pub price: f64, // Price in double, as in Java ProductCreatedEvent

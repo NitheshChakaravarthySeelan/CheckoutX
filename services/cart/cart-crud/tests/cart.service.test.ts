@@ -5,13 +5,18 @@ import { ProductReadGrpcClient } from "../src/grpc/clients/product-read.client.j
 import { InventoryReadGrpcClient } from "../src/grpc/clients/inventory-read.client.js";
 import type { Cart, CartItem, CartItemDetails } from "../src/models/cart.js";
 
+// Remove the file-level axios mock here.
+
 describe("CartService", () => {
   let cartService: CartService;
   let mockCartRepository: InMemoryCartRepository;
   let mockProductReadGrpcClient: ProductReadGrpcClient;
   let mockInventoryReadGrpcClient: InventoryReadGrpcClient;
+  let mockAxios: { post: jest.Mock }; // Declare the type for our mock axios
 
   beforeEach(() => {
+    jest.clearAllMocks();
+
     mockCartRepository = new InMemoryCartRepository();
     mockProductReadGrpcClient = {
       getProductDetails: jest.fn(),
@@ -19,15 +24,30 @@ describe("CartService", () => {
     mockInventoryReadGrpcClient = {
       checkStock: jest.fn(),
     } as unknown as InventoryReadGrpcClient;
+
+    // Create and configure mockAxios
+    mockAxios = {
+      post: jest.fn((url, data) => {
+        if (url.includes("/calculate-discounts")) {
+          return Promise.resolve({ data: { total_discount_cents: 100 } });
+        }
+        if (url.includes("/calculate-tax")) {
+          return Promise.resolve({ data: { tax_cents: 50 } });
+        }
+        return Promise.reject(new Error("Unknown axios post URL"));
+      }),
+    };
+
     cartService = new CartService(
       mockCartRepository,
       mockProductReadGrpcClient,
       mockInventoryReadGrpcClient,
+      mockAxios, // Inject the mock axios instance
     );
   });
 
   it("should create a cart if one does not exist when adding an item", async () => {
-    const userId = 1;
+    const userId = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
     const item: CartItem = { productId: "1", quantity: 1 };
     (
       mockProductReadGrpcClient.getProductDetails as jest.Mock
@@ -51,14 +71,14 @@ describe("CartService", () => {
     );
 
     expect(cart).toBeDefined();
-    expect(cart.userId).toBe(userId);
+    expect(cart.userId).toEqual(userId);
     expect(cart.items).toHaveLength(1);
     expect(cart.items[0]!.productId).toEqual(item.productId);
     expect(cart.items[0]!.quantity).toEqual(item.quantity);
   });
 
   it("should add a new item to an existing cart", async () => {
-    const userId = 1;
+    const userId = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
     const item1: CartItem = { productId: "1", quantity: 1 };
     const item2: CartItem = { productId: "2", quantity: 2 };
     (
@@ -103,7 +123,7 @@ describe("CartService", () => {
   });
 
   it("should update quantity if item already exists in cart", async () => {
-    const userId = 1;
+    const userId = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
     const item: CartItem = { productId: "1", quantity: 1 };
     (
       mockProductReadGrpcClient.getProductDetails as jest.Mock
@@ -129,7 +149,7 @@ describe("CartService", () => {
   });
 
   it("should update item quantity for an existing item", async () => {
-    const userId = 1;
+    const userId = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
     const item: CartItem = { productId: "1", quantity: 1 };
     (
       mockProductReadGrpcClient.getProductDetails as jest.Mock
@@ -154,7 +174,7 @@ describe("CartService", () => {
   });
 
   it("should remove an item from the cart", async () => {
-    const userId = 1;
+    const userId = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
     const item1: CartItem = { productId: "1", quantity: 1 };
     const item2: CartItem = { productId: "2", quantity: 2 };
     (
@@ -196,7 +216,7 @@ describe("CartService", () => {
   });
 
   it("should return a detailed cart with product information and total price", async () => {
-    const userId = 1;
+    const userId = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
     const item1: CartItem = { productId: "1", quantity: 1 };
     const item2: CartItem = { productId: "2", quantity: 2 };
 
@@ -234,18 +254,18 @@ describe("CartService", () => {
       expect(detailedCart!.items).toHaveLength(2);
       expect(detailedCart!.items[0].name).toBe("Product 1");
       expect(detailedCart!.items[1].priceCents).toBe(20000);
-      expect(detailedCart!.totalPriceCents).toBe(50000); // 10000 * 1 + 20000 * 2 = 50000
+      expect(detailedCart!.totalPriceCents).toBe(49950); // 10000 * 1 + 20000 * 2 - 100 (discount) + 50 (tax) = 49950
     }
   });
 
   it("should return null if cart not found for detailed cart request", async () => {
-    const userId = 999;
+    const userId = "b1f0d111-a222-b333-c444-d555e666f777";
     const detailedCart = await cartService.getCart(userId);
     expect(detailedCart).toBeNull();
   });
 
   it("should handle product not found when getting detailed cart", async () => {
-    const userId = 1;
+    const userId = "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11";
     const item: CartItem = { productId: "1", quantity: 1 };
     (
       mockProductReadGrpcClient.getProductDetails as jest.Mock

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { CartService } from "../services/cart.service.js";
 import { z } from "zod";
 import { validate } from "../utils/validator.js";
+import { isValidUuid } from "../utils/uuid.utils.js"; // Import isValidUuid
 
 export function createCartRoutes(cartService: CartService): Router {
   const router = Router();
@@ -14,11 +15,11 @@ export function createCartRoutes(cartService: CartService): Router {
   // Get cart by user ID
   router.get("/:userId", async (req, res, next) => {
     try {
-      const userId = req.params.userId; // userId is string now. Convert to number for existing service
-      if (!userId) {
-        return res.status(400).json({ message: "User ID is required" });
+      const userId = req.params.userId;
+      if (!userId || !isValidUuid(userId)) {
+        return res.status(400).json({ message: "Valid User ID is required" });
       }
-      const cart = await cartService.getCart(Number(userId));
+      const cart = await cartService.getCart(userId); // Removed Number() casting
       if (cart) {
         res.json(cart);
       } else {
@@ -35,15 +36,22 @@ export function createCartRoutes(cartService: CartService): Router {
     validate(cartItemSchema),
     async (req, res, next) => {
       try {
-        const userId = req.params.userId; // userId is string now
-        if (!userId) {
-          return res.status(400).json({ message: "User ID is required" });
+        const userId = req.params.userId;
+        const { productId, quantity } = req.body; // Destructure productId from body
+
+        if (!userId || !isValidUuid(userId)) {
+          return res.status(400).json({ message: "Valid User ID is required" });
         }
-        const item = req.body;
+        if (!productId || !isValidUuid(productId)) {
+          return res
+            .status(400)
+            .json({ message: "Valid Product ID is required" });
+        }
+
         const updatedCart = await cartService.addItem(
-          Number(userId), // Convert to number for existing service
-          item.productId,
-          item.quantity,
+          userId, // Removed Number() casting
+          productId,
+          quantity,
         );
         res.status(201).json(updatedCart);
       } catch (error) {
@@ -58,18 +66,21 @@ export function createCartRoutes(cartService: CartService): Router {
     validate(cartItemSchema), // cartItemSchema only validates quantity from body here
     async (req, res, next) => {
       try {
-        const userId = req.params.userId; // userId is string
-        const productId = req.params.productId; // productId is string
+        const userId = req.params.userId;
+        const productId = req.params.productId;
         const { quantity } = req.body;
 
-        if (!userId || !productId) {
+        if (!userId || !isValidUuid(userId)) {
+          return res.status(400).json({ message: "Valid User ID is required" });
+        }
+        if (!productId || !isValidUuid(productId)) {
           return res
             .status(400)
-            .json({ message: "User ID or Product ID is required" });
+            .json({ message: "Valid Product ID is required" });
         }
 
         const updatedCart = await cartService.updateItemQuantity(
-          Number(userId), // Convert to number for existing service
+          userId, // Removed Number() casting
           productId,
           quantity,
         );
@@ -87,17 +98,20 @@ export function createCartRoutes(cartService: CartService): Router {
   // Remove item from cart
   router.delete("/:userId/items/:productId", async (req, res, next) => {
     try {
-      const userId = req.params.userId; // userId is string
-      const productId = req.params.productId; // productId is string
+      const userId = req.params.userId;
+      const productId = req.params.productId;
 
-      if (!userId || !productId) {
+      if (!userId || !isValidUuid(userId)) {
+        return res.status(400).json({ message: "Valid User ID is required" });
+      }
+      if (!productId || !isValidUuid(productId)) {
         return res
           .status(400)
-          .json({ message: "User ID or Product ID is required" });
+          .json({ message: "Valid Product ID is required" });
       }
 
       const updatedCart = await cartService.removeItem(
-        Number(userId), // Convert to number for existing service
+        userId, // Removed Number() casting
         productId,
       );
       if (updatedCart) {

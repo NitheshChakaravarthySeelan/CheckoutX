@@ -10,7 +10,7 @@ use prometheus::{self, Encoder};
 use inventory_write::api::{health, inventory};
 use inventory_write::domain::service::InventoryService;
 use inventory_write::telemetry::{init_subscriber, setup_metrics_recorder, TracingLogger};
-use inventory_write::events::ProductCreatedEvent; // Import ProductCreatedEvent
+
 
 use inventory_write::kafka_consumer;
 

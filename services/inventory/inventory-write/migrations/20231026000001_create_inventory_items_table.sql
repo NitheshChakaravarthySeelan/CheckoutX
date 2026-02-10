@@ -1,8 +1,8 @@
 -- Add migration script to create the inventory_items table
 
 CREATE TABLE IF NOT EXISTS inventory_items (
-    id SERIAL PRIMARY KEY, -- Added ID column
-    product_id VARCHAR(255) NOT NULL UNIQUE, -- Added UNIQUE constraint for product_id
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(), -- Added ID column
+    product_id UUID NOT NULL UNIQUE, -- Added UNIQUE constraint for product_id
     quantity INTEGER NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

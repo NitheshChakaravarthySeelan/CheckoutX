@@ -5,15 +5,16 @@ use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::message::Message;
 use rdkafka::ClientConfig;
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::PgPool; // Keep PgPool for run_kafka_consumer
+use uuid::Uuid; // Added Uuid import
 
 use crate::events::ProductCreatedEvent; // Import ProductCreatedEvent
 
 // --- Event Structs (Matching Java DTOs for JSON structure) ---
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct CheckoutInitiatedEvent {
-    order_id: String, // Changed to String from Uuid
-    user_id: String,   // Changed to String from Uuid
+    order_id: Uuid, // Changed to Uuid
+    user_id: Uuid,   // Changed to Uuid
     items: Vec<InventoryItem>,
     // total_amount: f64, // If needed from event
     r#type: String, // Event type string, e.g., "CheckoutInitiatedEvent"
@@ -22,7 +23,7 @@ struct CheckoutInitiatedEvent {
 // Renamed for clarity and consistency with shared DTO
 #[derive(Debug, Deserialize, Serialize)]
 struct InventoryItem {
-    product_id: String,
+    product_id: Uuid,
     quantity: i32,
 }
 
@@ -45,13 +46,36 @@ struct InventoryReservationFailedEvent {
 // --- End Event Structs ---
 
 
-async fn process_message(
+async fn process_message<DB>(
     msg_payload: &[u8],
     producer: &FutureProducer,
-    pool: &PgPool,
-    product_events_topic: &str, // Pass product_events_topic
-    checkout_events_topic: &str, // Pass checkout_events_topic
-) {
+    pool: &sqlx::Pool<DB>,
+    _product_events_topic: &str,
+    checkout_events_topic: &str,
+) where
+    DB: sqlx::Database + Send + Sync,
+    <DB as sqlx::Database>::Connection: sqlx::Connection + Send + Unpin, // Connection itself needs Send + Unpin for transaction
+    <DB as sqlx::Database>::TransactionManager: sqlx::TransactionManager<Database = DB>,
+
+    // Explicitly declare that Pool and &mut Connection are Executors
+    for<'c> &'c sqlx::Pool<DB>: sqlx::Executor<'c, Database = DB>,
+    for<'c> &'c mut <DB as sqlx::Database>::Connection: sqlx::Executor<'c, Database = DB>,
+
+    // Bounds for types used in query parameters (.bind())
+    for<'a> i32: sqlx::Type<DB> + sqlx::Encode<'a, DB> + sqlx::Decode<'a, DB>,
+    for<'a> Uuid: sqlx::Type<DB> + sqlx::Encode<'a, DB> + sqlx::Decode<'a, DB>,
+    for<'a> time::OffsetDateTime: sqlx::Type<DB> + sqlx::Encode<'a, DB> + sqlx::Decode<'a, DB>,
+
+    // Corrected IntoArguments bound for all types passed to .bind()
+    for<'a> <DB as sqlx::Database>::Arguments<'a>: sqlx::IntoArguments<'a, DB>,
+
+    // Bounds for types returned by queries (FromRow for tuples and structs)
+    (i32,): for<'a> sqlx::FromRow<'a, <DB as sqlx::Database>::Row>,
+    InventoryItem: for<'a> sqlx::FromRow<'a, <DB as sqlx::Database>::Row>,
+
+    // Ensure the database's Row type correctly implements necessary traits
+    <DB as sqlx::Database>::Row: sqlx::Row + sqlx::ColumnIndex<usize> + Unpin,
+{
     let raw_event: serde_json::Value = match serde_json::from_slice(msg_payload) {
         Ok(val) => val,
         Err(e) => {
@@ -146,8 +170,8 @@ async fn process_message(
                         
                         // Publish InventoryReservationFailedEvent
                         let failed_event = InventoryReservationFailedEvent {
-                            order_id: order_id_clone,
-                            user_id: user_id_clone,
+                            order_id: order_id_clone.to_string(),
+                            user_id: user_id_clone.to_string(),
                             reason: format!("Failed to update inventory for product {}: {}", item.product_id, e),
                             timestamp: chrono::Utc::now().to_rfc3339(),
                             r#type: "InventoryReservationFailedEvent".to_string(),
@@ -169,8 +193,8 @@ async fn process_message(
                     eprintln!("Failed to commit transaction: {}", e);
                     // Publish InventoryReservationFailedEvent
                     let failed_event = InventoryReservationFailedEvent {
-                        order_id: order_id_clone,
-                        user_id: user_id_clone,
+                        order_id: order_id_clone.to_string(),
+                        user_id: user_id_clone.to_string(),
                         reason: format!("Failed to commit transaction: {}", e),
                         timestamp: chrono::Utc::now().to_rfc3339(),
                         r#type: "InventoryReservationFailedEvent".to_string(),
@@ -188,8 +212,8 @@ async fn process_message(
                 }
 
                 let event = InventoryReservedEvent {
-                    order_id: order_id_clone,
-                    user_id: user_id_clone,
+                    order_id: order_id_clone.to_string(),
+                    user_id: user_id_clone.to_string(),
                     timestamp: chrono::Utc::now().to_rfc3339(),
                     r#type: "InventoryReservedEvent".to_string(),
                 };
@@ -205,8 +229,8 @@ async fn process_message(
             } else {
                 let _ = transaction.rollback().await;
                 let event = InventoryReservationFailedEvent {
-                    order_id: order_id_clone,
-                    user_id: user_id_clone,
+                    order_id: order_id_clone.to_string(),
+                    user_id: user_id_clone.to_string(),
                     reason: "Insufficient inventory".to_string(),
                     timestamp: chrono::Utc::now().to_rfc3339(),
                     r#type: "InventoryReservationFailedEvent".to_string(),
@@ -260,7 +284,7 @@ pub async fn run_kafka_consumer(
         match consumer.recv().await {
             Ok(msg) => {
                 let payload = msg.payload().unwrap_or_default();
-                process_message(payload, &producer, &pool, product_events_topic, checkout_events_topic).await;
+                process_message::<sqlx::Postgres>(payload, &producer, &pool, product_events_topic, checkout_events_topic).await;
             }
             Err(e) => {
                 eprintln!("Kafka error: {}", e);
@@ -270,53 +294,14 @@ pub async fn run_kafka_consumer(
 }#[cfg(test)]
 mod tests {
     use super::*;
-    use async_trait::async_trait;
-    use rdkafka::producer::{ProducerContext, ThreadedProducer};
+    use rdkafka::ClientConfig; // Import ClientConfig
+    use rdkafka::producer::FutureProducer; // Import FutureProducer
     use sqlx::sqlite::{SqliteConnectOptions, SqlitePool}; // Use Sqlite for in-memory testing
-
-    // Mock ProducerContext for rdkafka
-    struct MockProducerContext;
-    impl ProducerContext for MockProducerContext {}
-
-    // A mock producer that does nothing
-    struct MockProducer {
-        inner: ThreadedProducer<MockProducerContext>,
-    }
-
-    impl MockProducer {
-        fn new() -> Self {
-            let producer_config = ClientConfig::new()
-                .set("bootstrap.servers", "localhost:9092")
-                .create_with_context(MockProducerContext)
-                .expect("Failed to create mock producer");
-            MockProducer { inner: producer_config }
-        }
-    }
-
-    impl rdkafka::producer::Producer<MockProducerContext> for MockProducer {
-        fn client(&self) -> &rdkafka::Client {
-            self.inner.client()
-        }
-
-        fn send(
-            &self,
-            record: &rdkafka::producer::BaseRecord<'_, [u8], [u8]>,
-        ) -> Result<(), rdkafka::error::KafkaError> {
-            // Simply log that a message was "sent"
-            println!(
-                "MockProducer: Sent message to topic {} with key {:?}",
-                record.topic,
-                record.key
-            );
-            Ok(())
-        }
-    }
-
 
     #[tokio::test]
     async fn test_process_checkout_initiated_event_success() {
         // Setup: Create an in-memory SQLite database for testing PgPool
-        let pool = SqlitePool::connect_options(
+        let pool = SqlitePool::connect_with( // Changed from connect_options
             SqliteConnectOptions::new()
                 .filename(":memory:")
                 .create_if_missing(true),
@@ -325,9 +310,11 @@ mod tests {
         .expect("Failed to connect to in-memory SQLite");
         sqlx::migrate!().run(&pool).await.expect("Failed to run migrations"); // Run migrations to create 'inventory' table
 
+        let product_uuid_1 = Uuid::new_v4();
+
         // Insert some initial inventory
         sqlx::query("INSERT INTO inventory_items (product_id, quantity) VALUES ($1, $2)")
-            .bind("prod-1".to_string())
+            .bind(product_uuid_1)
             .bind(10)
             .execute(&pool)
             .await
@@ -339,23 +326,27 @@ mod tests {
             user_id: Uuid::new_v4(),
             items: vec![
                 InventoryItem {
-                    product_id: "prod-1".to_string(),
+                    product_id: product_uuid_1,
                     quantity: 5,
                 },
             ],
-            total_amount: 50.0, // This field is not used in process_message but is part of DTO
-            timestamp: chrono::Utc::now().to_rfc3339(),
-            r#type: "CheckoutInitiatedEvent".to_string(),
+            r#type: "CheckoutInitiatedEvent".to_string(), // Removed timestamp
         };
         let payload = serde_json::to_string(&event).unwrap();
 
-        let mock_producer = MockProducer::new();
+        // Create a dummy FutureProducer
+        let producer: FutureProducer = ClientConfig::new()
+            .set("bootstrap.servers", "localhost:1") // Unreachable address
+            .set("message.send.max.retries", "0") // Fail fast
+            .create()
+            .expect("Failed to create dummy producer");
 
         // Act
-        process_message(payload.as_bytes(), &mock_producer.inner, &pool).await;
+        process_message::<sqlx::Sqlite>(payload.as_bytes(), &producer, &pool, "product-events-topic", "checkout-events-topic").await; // Pass &producer
 
         // Assert (check if inventory was updated)
-        let (quantity,): (i32,) = sqlx::query_as("SELECT quantity FROM inventory_items WHERE product_id = 'prod-1'")
+        let (quantity,): (i32,) = sqlx::query_as("SELECT quantity FROM inventory_items WHERE product_id = $1")
+            .bind(product_uuid_1)
             .fetch_one(&pool)
             .await
             .expect("Failed to fetch updated quantity");
@@ -365,7 +356,7 @@ mod tests {
     #[tokio::test]
     async fn test_process_checkout_initiated_event_failure_insufficient_inventory() {
         // Setup: Create an in-memory SQLite database for testing PgPool
-        let pool = SqlitePool::connect_options(
+        let pool = SqlitePool::connect_with( // Changed from connect_options
             SqliteConnectOptions::new()
                 .filename(":memory:")
                 .create_if_missing(true),
@@ -374,9 +365,11 @@ mod tests {
         .expect("Failed to connect to in-memory SQLite");
         sqlx::migrate!().run(&pool).await.expect("Failed to run migrations"); // Run migrations to create 'inventory' table
 
+        let product_uuid_2 = Uuid::new_v4();
+
         // Insert some initial inventory
         sqlx::query("INSERT INTO inventory_items (product_id, quantity) VALUES ($1, $2)")
-            .bind("prod-2".to_string())
+            .bind(product_uuid_2)
             .bind(2)
             .execute(&pool)
             .await
@@ -388,27 +381,30 @@ mod tests {
             user_id: Uuid::new_v4(),
             items: vec![
                 InventoryItem {
-                    product_id: "prod-2".to_string(),
+                    product_id: product_uuid_2,
                     quantity: 5, // Requesting 5, only 2 available
                 },
             ],
-            total_amount: 50.0,
-            timestamp: chrono::Utc::now().to_rfc3339(),
-            r#type: "CheckoutInitiatedEvent".to_string(),
+            r#type: "CheckoutInitiatedEvent".to_string(), // Removed timestamp
         };
         let payload = serde_json::to_string(&event).unwrap();
 
-        let mock_producer = MockProducer::new();
+        // Create a dummy FutureProducer
+        let producer: FutureProducer = ClientConfig::new()
+            .set("bootstrap.servers", "localhost:1") // Unreachable address
+            .set("message.send.max.retries", "0") // Fail fast
+            .create()
+            .expect("Failed to create dummy producer");
 
         // Act
-        process_message(payload.as_bytes(), &mock_producer.inner, &pool).await;
+        process_message::<sqlx::Sqlite>(payload.as_bytes(), &producer, &pool, "product-events-topic", "checkout-events-topic").await; // Pass &producer
 
         // Assert (check if inventory was NOT updated)
-        let (quantity,): (i32,) = sqlx::query_as("SELECT quantity FROM inventory_items WHERE product_id = 'prod-2'")
+        let (quantity,): (i32,) = sqlx::query_as("SELECT quantity FROM inventory_items WHERE product_id = $1")
+            .bind(product_uuid_2)
             .fetch_one(&pool)
             .await
             .expect("Failed to fetch updated quantity");
         assert_eq!(quantity, 2); // Should remain 2
     }
 }
-

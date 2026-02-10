@@ -2,16 +2,16 @@ import type { ICartRepository } from "./ICartRepository.js";
 import type { Cart, CartItem } from "../models/cart.js";
 
 export class InMemoryCartRepository implements ICartRepository {
-  private carts: Map<number, Cart> = new Map();
+  private carts: Map<string, Cart> = new Map();
   private nextId = 1;
 
-  async findByUserId(userId: number): Promise<Cart | null> {
+  async findByUserId(userId: string): Promise<Cart | null> {
     return this.carts.get(userId) || null;
   }
 
-  async createCart(userId: number): Promise<Cart> {
+  async createCart(userId: string): Promise<Cart> {
     const newCart: Cart = {
-      id: this.nextId++,
+      id: this.nextId++, // id remains number for now, as per init.sql. userId changes to string.
       userId,
       items: [],
       createdAt: new Date(),
@@ -39,11 +39,11 @@ export class InMemoryCartRepository implements ICartRepository {
     throw new Error("Cart not found for save");
   }
 
-  async deleteCart(userId: number): Promise<void> {
+  async deleteCart(userId: string): Promise<void> {
     this.carts.delete(userId);
   }
 
-  async addItemToCart(userId: number, item: CartItem): Promise<Cart> {
+  async addItemToCart(userId: string, item: CartItem): Promise<Cart> {
     let cart = await this.findByUserId(userId);
     if (!cart) {
       cart = await this.createCart(userId);
@@ -62,7 +62,7 @@ export class InMemoryCartRepository implements ICartRepository {
   }
 
   async updateItemQuantity(
-    userId: number,
+    userId: string,
     productId: string,
     quantity: number,
   ): Promise<Cart | null> {
@@ -82,7 +82,7 @@ export class InMemoryCartRepository implements ICartRepository {
   }
 
   async removeItemFromCart(
-    userId: number,
+    userId: string,
     productId: string,
   ): Promise<Cart | null> {
     let cart = await this.findByUserId(userId);

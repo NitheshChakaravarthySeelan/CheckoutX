@@ -10,7 +10,7 @@ use sqlx::types::time::OffsetDateTime; // Explicitly import OffsetDateTime from 
 #[derive(Debug, Serialize, Deserialize, Clone, FromRow)]
 pub struct Inventory {
     pub id: Uuid,
-    pub product_id: String,
+    pub product_id: Uuid,
     pub quantity: i32,
     #[serde(with = "time::serde::rfc3339")] // Use time's serde integration
     pub created_at: OffsetDateTime, // Use sqlx's OffsetDateTime

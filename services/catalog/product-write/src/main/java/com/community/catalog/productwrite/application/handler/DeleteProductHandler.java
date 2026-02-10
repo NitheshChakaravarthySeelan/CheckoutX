@@ -30,6 +30,6 @@ public class DeleteProductHandler {
         }
 
         // 2. Delete
-        productRepository.deleteById(command.getProductId());
+        productRepository.deleteById(java.util.UUID.fromString(command.getProductId()));
     }
 }

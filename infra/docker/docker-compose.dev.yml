@@ -5,8 +5,14 @@ services:
       context: ../../ # Monorepo root
       dockerfile: services/users/user-service/Dockerfile
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: user_service_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -23,8 +29,14 @@ services:
       context: ../../ # Monorepo root
       dockerfile: services/catalog/product-read/Dockerfile # Specify the Dockerfile path
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: product_read_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -43,8 +55,14 @@ services:
       context: ../../ # Monorepo root
       dockerfile: services/catalog/product-write/Dockerfile # Specify the Dockerfile path
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: product_write_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       - postgres
       - kafka # Add Kafka dependency
@@ -62,7 +80,15 @@ services:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/inventory/inventory-write/Dockerfile
+      network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: inventory_write_dev
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       - postgres
       - kafka
@@ -80,8 +106,14 @@ services:
       context: ../../ # Monorepo root
       dockerfile: services/cart/cart-crud/Dockerfile # Specify the Dockerfile path
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: cart_crud_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -106,8 +138,14 @@ services:
       context: ../../ # Monorepo root
       dockerfile: services/users/auth-service/Dockerfile
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: auth_service_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -125,14 +163,21 @@ services:
       - JWT_SECRET=RjhFY0JDenlOV3NEaVZiR2hIMFVkQk1Qa01oc1JCSFA=
       - JWT_EXPIRES_IN=1h
       - GRPC_SERVER_PORT=6565
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4318
 
   checkout-orchestrator:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/checkout/checkout-orchestrator/Dockerfile
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: checkout_orchestrator_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -152,8 +197,14 @@ services:
       context: ../../ # Monorepo root
       dockerfile: apps/gateway-bff/Dockerfile # Specify the Dockerfile path
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: gateway_bff_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -162,7 +213,7 @@ services:
       - cart-crud
       # - intent-parser # Depends on intent-parser
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - NODE_ENV=development
       - PORT=3000
@@ -172,19 +223,28 @@ services:
       - NEXT_PUBLIC_INTENT_PARSER_URL=http://intent-parser:8080 # URL for intent-parser
       - AUTH_SERVICE_GRPC_URL=auth-service:6565 # Correct gRPC URL
       - PRODUCT_READ_GRPC_URL=product-read:9091 # Correct gRPC URL
-      - INVENTORY_GRPC_URL=inventory-read:50052 # Correct gRPC URL
+      - INVENTORY_GRPC_URL=inventory-read:50052
+      - NEXT_PUBLIC_CHECKOUT_ORCHESTRATOR_URL=http://checkout-orchestrator:8000
+      - NEXT_PUBLIC_DISCOUNT_ENGINE_URL=http://discount-engine:8085
+      - NEXT_PUBLIC_TAX_CALCULATION_URL=http://tax-calculation:8087 # Correct gRPC URL
 
   cart-snapshot:
     build:
       context: ../../ # Monorepo root
       dockerfile: services/cart/cart-snapshot/Dockerfile # Specify the Dockerfile path
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: cart_snapshot_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
-      - cart-crud # This service depends on cart-crud to get live cart data
+      - cart-crud
     ports:
       - "8083:8083"
     environment:
@@ -201,8 +261,14 @@ services:
       context: ../../ # Monorepo root
       dockerfile: services/cart/cart-pricing/Dockerfile
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: cart_pricing_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -221,7 +287,9 @@ services:
   postgres:
     image: postgres:15
     container_name: postgres_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     environment:
       - POSTGRES_USER=admin
@@ -236,7 +304,9 @@ services:
   redis:
     image: redis:7
     container_name: redis_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     ports:
       - "6379:6379"
@@ -246,7 +316,9 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
@@ -257,7 +329,9 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - zookeeper
@@ -275,7 +349,9 @@ services:
   schema-registry:
     image: confluentinc/cp-schema-registry:7.5.0
     container_name: schema_registry_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - kafka
@@ -291,8 +367,14 @@ services:
       context: ../../ # Monorepo root
       dockerfile: services/pricing/discount-engine/Dockerfile
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: discount_engine_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -308,8 +390,14 @@ services:
       context: ../../ # Monorepo root
       dockerfile: services/pricing/tax-calculation/Dockerfile
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
     container_name: tax_calculation_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -325,10 +413,16 @@ services:
       context: ../../ # Monorepo root
       dockerfile: services/catalog/product-lookup-rust/Dockerfile
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
       args:
         - DATABASE_URL=postgres://admin:secret@host.docker.internal:5432/community_platform
     container_name: product_lookup_rust_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - postgres
@@ -341,14 +435,19 @@ services:
 
   inventory-read:
     build:
-      context: ../../ # Monorepo root
+      context: ../../
       dockerfile: services/inventory/inventory-read/Dockerfile
       network: host
+      extra_hosts:
+        - "repo.maven.apache.org:104.18.19.12"
+        - "repo1.maven.org:104.18.19.12"
+        - "registry.npmjs.org:104.16.2.34"
       args:
         - DATABASE_URL=postgres://admin:secret@postgres_dev:5432/community_platform
     container_name: inventory_read_dev
-    dns: 8.8.8.8
-
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       - postgres
     ports:
@@ -362,7 +461,9 @@ services:
   kafdrop:
     image: obsidiandynamics/kafdrop:latest
     container_name: kafdrop_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - kafka
@@ -374,7 +475,9 @@ services:
   prometheus:
     image: prom/prometheus:v2.47.1
     container_name: prometheus_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     volumes:
       - ./prometheus:/etc/prometheus
@@ -388,7 +491,9 @@ services:
   grafana:
     image: grafana/grafana:10.1.5
     container_name: grafana_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     depends_on:
       - prometheus
@@ -400,7 +505,9 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:1.50
     container_name: jaeger_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     ports:
       - "6831:6831/udp"
@@ -413,7 +520,9 @@ services:
   minio:
     image: minio/minio:latest
     container_name: minio_dev
-    dns: 8.8.8.8
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
 
     ports:
       - "9001:9001" # Minio UI

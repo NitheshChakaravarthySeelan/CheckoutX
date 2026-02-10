@@ -4,6 +4,7 @@ use crate::product_lookup::{
     GetProductByIdRequest, Product,
 };
 use sqlx::{FromRow, Pool, Postgres};
+use uuid::Uuid;
 use std::sync::Arc; // Needed for Arc
 use async_trait::async_trait; // Needed for async_trait macro
 
@@ -13,7 +14,7 @@ pub mod product_lookup {
 
 #[derive(FromRow, Debug, Clone)]
 pub struct ProductRow {
-    pub id: String,
+    pub id: Uuid,
     pub name: Option<String>,
     pub description: Option<String>,
     pub price: Option<f64>,
@@ -30,7 +31,7 @@ pub struct ProductRow {
 
 #[async_trait]
 pub trait ProductRepository: Send + Sync {
-    async fn find_product_by_id(&self, id: &str) -> Result<Option<ProductRow>, sqlx::Error>;
+    async fn find_product_by_id(&self, id: Uuid) -> Result<Option<ProductRow>, sqlx::Error>;
 }
 
 pub struct DbProductRepository {
@@ -45,7 +46,7 @@ impl DbProductRepository {
 
 #[async_trait]
 impl ProductRepository for DbProductRepository {
-    async fn find_product_by_id(&self, id: &str) -> Result<Option<ProductRow>, sqlx::Error> {
+    async fn find_product_by_id(&self, id: Uuid) -> Result<Option<ProductRow>, sqlx::Error> {
         sqlx::query_as(
             r#"
             SELECT id, name, description, price, quantity, sku, image_url, category, manufacturer, status, version, created_at, updated_at
@@ -74,14 +75,16 @@ impl ProductLookup for MyProductLookup {
         &self,
         request: Request<GetProductByIdRequest>,
     ) -> Result<Response<Product>, Status> {
-        let id = request.into_inner().id;
+        let product_id_str = request.into_inner().id;
+        let product_id = Uuid::parse_str(&product_id_str)
+            .map_err(|_| Status::invalid_argument(format!("Invalid UUID format for product ID: {}", product_id_str)))?;
 
-        let row = self.repository.find_product_by_id(&id).await
+        let row = self.repository.find_product_by_id(product_id).await
             .map_err(|e| Status::internal(format!("Database error: {}", e)))?
-            .ok_or_else(|| Status::not_found(format!("Product with ID {} not found", id)))?;
+            .ok_or_else(|| Status::not_found(format!("Product with ID {} not found", product_id_str)))?;
 
         let product = Product {
-            id: row.id,
+            id: row.id.to_string(),
             name: row.name.unwrap_or_default(),
             description: row.description.unwrap_or_default(),
             price: row.price.unwrap_or(0.0),
