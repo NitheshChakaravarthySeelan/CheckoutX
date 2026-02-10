@@ -34,7 +34,7 @@ public class UpdateProductHandler {
         }
 
         // 2. Find existing product
-        Product product = productRepository.findById(command.getProductId())
+        Product product = productRepository.findById(java.util.UUID.fromString(command.getProductId()))
                 .orElseThrow(() -> new ProductNotFoundException("Product with ID '" + command.getProductId() + "' not found."));
 
         // 3. Update fields if they are provided

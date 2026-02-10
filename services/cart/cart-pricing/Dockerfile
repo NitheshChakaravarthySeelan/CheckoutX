@@ -5,7 +5,7 @@ WORKDIR /app
 # Copy the pom.xml and source code
 COPY services/cart/cart-pricing/pom.xml ./pom.xml
 COPY services/cart/cart-pricing/src ./src
-RUN mvn -B package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 mvn -B package -DskipTests -Dmaven.wagon.http.readTimeout=120000 -Dmaven.wagon.http.retryHandler.count=5
 
 # Stage 2: Create the final, lightweight container
 FROM eclipse-temurin:17-jre-jammy

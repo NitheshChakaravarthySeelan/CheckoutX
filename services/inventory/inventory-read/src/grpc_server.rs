@@ -2,6 +2,7 @@
 
 use tonic::{Request, Response, Status};
 use inventory_read::domain::service::InventoryService;
+use uuid::Uuid; // Added Uuid import
 
 use inventory_read::inventory_proto::inventory_service_server::InventoryService as InventoryServiceTrait;
 use inventory_read::inventory_proto::{CheckStockRequest, CheckStockResponse};
@@ -27,10 +28,15 @@ impl InventoryServiceTrait for InventoryGrpcService {
         let product_id_str = req.product_id;
         let requested_quantity = req.quantity;
 
+        let product_id = match Uuid::parse_str(&product_id_str) {
+            Ok(uuid) => uuid,
+            Err(_) => return Err(Status::invalid_argument(format!("Invalid product ID format: {}", product_id_str))),
+        };
+
         // Call the domain service
         let inventory_result = self
             .inventory_service
-            .get_inventory_by_product_id(&product_id_str)
+            .get_inventory_by_product_id(product_id)
             .await;
 
         match inventory_result {
@@ -46,7 +52,7 @@ impl InventoryServiceTrait for InventoryGrpcService {
                 };
 
                 let reply = CheckStockResponse {
-                    product_id: product_id_str, // Changed back to product_id_str
+                    product_id: inventory.product_id.to_string(), // Convert Uuid back to String for proto
                     available,
                     current_stock: inventory.quantity, // Changed to inventory.quantity
                     message,

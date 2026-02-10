@@ -15,8 +15,14 @@ else:
     DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://admin:secret@postgres_dev:5432/community_platform")
 KAFKA_BOOTSTRAP_SERVERS = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:29092")
 
+MOCK_KAFKA = os.getenv("MOCK_KAFKA", "false").lower() == "true"
+
 database = Database(DATABASE_URL)
-kafka_producer = AIOKafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
+if MOCK_KAFKA:
+    print("Mocking Kafka producer.")
+    kafka_producer = None
+else:
+    kafka_producer = AIOKafkaProducer(bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS)
 
 # Initialize httpx_client globally, but connect/close in app startup/shutdown events
 httpx_client: httpx.AsyncClient = None

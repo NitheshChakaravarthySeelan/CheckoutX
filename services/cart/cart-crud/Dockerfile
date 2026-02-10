@@ -14,11 +14,11 @@ ENV PNPM_HOME="/usr/local/bin"
 ENV PATH="$PNPM_HOME:$PATH"
 
 # Fetch all dependencies to populate the pnpm store for the filtered project
-RUN pnpm fetch --filter=cart-crud
+RUN pnpm fetch --filter=cart-crud --prod
 
 # Build the specific service (cart-crud)
 ENV CI=true
-RUN pnpm install --filter=cart-crud --no-dev
+RUN pnpm install --filter=cart-crud --no-dev --ignore-scripts
 RUN pnpm --filter=cart-crud run build
 
 

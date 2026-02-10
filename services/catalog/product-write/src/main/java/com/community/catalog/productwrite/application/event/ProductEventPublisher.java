@@ -20,7 +20,7 @@ public class ProductEventPublisher {
 
     public void publishProductCreatedEvent(Product product) {
         ProductCreatedEvent event = new ProductCreatedEvent(
-            product.getId(),
+            product.getId().toString(),
             product.getSku(),
             product.getName(),
             product.getPrice(),
@@ -28,7 +28,7 @@ public class ProductEventPublisher {
         );
 
         // Use product ID as the key for partitioning, ensuring all events for one product go to same partition
-        kafkaTemplate.send(productEventsTopic, product.getId(), event);
-        log.info("Published ProductCreatedEvent for Product ID: {}", product.getId());
+        kafkaTemplate.send(productEventsTopic, product.getId().toString(), event);
+        log.info("Published ProductCreatedEvent for Product ID: {}", product.getId().toString());
     }
 }

@@ -9,6 +9,8 @@ from typing import Dict, Any
 import uuid
 import httpx
 import os
+from ..utils.uuid_utils import is_valid_uuid # Import the uuid validation utility
+import datetime # Import datetime for timezone-aware timestamps
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -156,6 +158,17 @@ class KafkaConsumerManager:
 
     async def handle_checkout_initiated(self, saga_state: SagaState, event_data: Dict[str, Any]):
         logger.info(f"Handling CheckoutInitiated event for saga {saga_state.id}")
+
+        # Validate product_ids in cart_details
+        items = saga_state.context["cart_details"]["items"]
+        for item in items:
+            product_id = item.get("product_id")
+            if not product_id or not is_valid_uuid(product_id):
+                logger.error(f"Invalid product_id '{product_id}' in cart_details for saga {saga_state.id}. Failing saga.")
+                saga_state.state = SAGA_STATE_FAILED
+                saga_state.context["current_step"] = "CHECKOUT_INITIATED_VALIDATION_FAILED"
+                saga_state.context["errors"].append({"step": "checkout_initiated_validation", "reason": f"Invalid product ID: {product_id}"})
+                return # Stop processing this event, saga is failed
 
         # Update saga state to pending inventory reservation
         saga_state.state = SAGA_STATE_INVENTORY_RESERVATION_PENDING

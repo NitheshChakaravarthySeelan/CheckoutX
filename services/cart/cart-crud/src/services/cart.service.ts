@@ -2,17 +2,22 @@ import type { Cart, CartDetails, CartItem } from "../models/cart.js";
 import type { ICartRepository } from "../repositories/ICartRepository.js";
 import { ProductReadGrpcClient } from "../grpc/clients/product-read.client.js";
 import { InventoryReadGrpcClient } from "../grpc/clients/inventory-read.client.js";
-import axios from "axios"; // Import axios
+import axios, { type AxiosInstance } from "axios"; // Import axios and AxiosInstance type
 import config from "../config/index.js"; // Import config
 
 export class CartService {
+  private axiosInstance: AxiosInstance; // Declare a private property for the axios instance
+
   constructor(
     private cartRepository: ICartRepository,
     private productReadGrpcClient: ProductReadGrpcClient,
     private inventoryReadGrpcClient: InventoryReadGrpcClient,
-  ) {}
+    axiosInstance?: AxiosInstance, // Make it optional
+  ) {
+    this.axiosInstance = axiosInstance || axios; // Use provided instance or default axios
+  }
 
-  async getOrCreateCart(userId: number): Promise<Cart> {
+  async getOrCreateCart(userId: string): Promise<Cart> {
     const existingCart = await this.cartRepository.findByUserId(userId);
     if (existingCart) {
       return existingCart;
@@ -22,7 +27,7 @@ export class CartService {
   }
 
   async addItem(
-    userId: number,
+    userId: string,
     productId: string, // Changed to string to match product.proto
     quantity: number,
   ): Promise<Cart> {
@@ -72,7 +77,7 @@ export class CartService {
     return this.cartRepository.save(cart);
   }
 
-  async getCart(userId: number): Promise<CartDetails | null> {
+  async getCart(userId: string): Promise<CartDetails | null> {
     const cart = await this.cartRepository.findByUserId(userId);
     if (!cart) {
       return null;
@@ -94,7 +99,7 @@ export class CartService {
 
     try {
       // Call Discount Engine
-      const discountResponse = await axios.post(
+      const discountResponse = await this.axiosInstance.post(
         `${config.discountEngineUrl}/calculate-discounts`,
         { items: enrichedItems, userId: userId },
       );
@@ -107,7 +112,7 @@ export class CartService {
     try {
       // Call Tax Calculation Service
       // For now, providing a mock address, a real implementation would have address details
-      const taxResponse = await axios.post(
+      const taxResponse = await this.axiosInstance.post(
         `${config.taxCalculationUrl}/calculate-tax`,
         {
           items: enrichedItems,
@@ -139,7 +144,7 @@ export class CartService {
   }
 
   async updateItemQuantity(
-    userId: number,
+    userId: string,
     productId: string, // Changed to string
     quantity: number,
   ): Promise<Cart> {
@@ -172,7 +177,7 @@ export class CartService {
     return this.cartRepository.save(cart);
   }
 
-  async removeItem(userId: number, productId: string): Promise<Cart> {
+  async removeItem(userId: string, productId: string): Promise<Cart> {
     // Changed to string
     const cart = await this.getOrCreateCart(userId);
     const initialLength = cart.items.length;
@@ -186,8 +191,8 @@ export class CartService {
   }
 
   async clearCartByUserId(userId: string): Promise<void> {
-    // Assuming cartRepository.findByUserId expects a number, convert the string userId
-    const cart = await this.cartRepository.findByUserId(Number(userId));
+    // Assuming cartRepository.findByUserId expects a string (UUID)
+    const cart = await this.cartRepository.findByUserId(userId);
     if (!cart) {
       console.warn(`No active cart found for user ID: ${userId} to clear.`);
       return;

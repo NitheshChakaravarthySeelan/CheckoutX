@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -30,9 +31,9 @@ class UpdateProductHandlerTest {
     @Test
     void testHandle_WhenUserIsAdmin_ShouldUpdateAndReturnProduct() {
         // Arrange
-        String productId = "a2b7e9b8-3e3c-4e8a-8f7a-9a9b9c9d9e9f";
+        UUID productId = UUID.fromString("a2b7e9b8-3e3c-4e8a-8f7a-9a9b9c9d9e9f");
         UpdateProductCommand command = new UpdateProductCommand(
-                productId, "Updated Name", "Updated Desc", new BigDecimal("129.99"),
+                productId.toString(), "Updated Name", "Updated Desc", new BigDecimal("129.99"),
                 150, "new.jpg", "new-cat", "new-manu", "ACTIVE",
                 "admin-user-id", List.of("ADMIN")
         );
@@ -55,9 +56,9 @@ class UpdateProductHandlerTest {
     @Test
     void testHandle_WhenProductNotFound_ShouldThrowException() {
         // Arrange
-        String productId = "b3c8f0c9-4f4d-5f9b-9g8b-0a0b0c0d0e0f";
+        UUID productId = UUID.fromString("b3c8f0c9-4f4d-5f9b-9a8b-0a0b0c0d0e0f");
         UpdateProductCommand command = new UpdateProductCommand(
-                productId, "Upd", "Upd", null, null, null, null, null, null, "user-id", List.of("ADMIN")
+                productId.toString(), "Upd", "Upd", null, null, null, null, null, null, "user-id", List.of("ADMIN")
         );
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
@@ -70,9 +71,9 @@ class UpdateProductHandlerTest {
     @Test
     void testHandle_WhenUserLacksRole_ShouldThrowForbiddenException() {
         // Arrange
-        String productId = "c4d9g1d0-5g5e-6g0c-0h9c-1b1c1d1e1f1g";
+        UUID productId = UUID.fromString("c4d9a1d0-5a5e-6a0c-0a9c-1b1c1d1e1f1a");
         UpdateProductCommand command = new UpdateProductCommand(
-                productId, "Upd", "Upd", null, null, null, null, null, null, "user-id", List.of("USER")
+                productId.toString(), "Upd", "Upd", null, null, null, null, null, null, "user-id", List.of("USER")
         );
 
         // Act & Assert

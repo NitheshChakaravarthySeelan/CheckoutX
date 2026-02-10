@@ -35,7 +35,7 @@ async fn main() -> std::io::Result<()> {
         r#"
         CREATE TABLE IF NOT EXISTS inventory_items (
             id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            product_id VARCHAR(255) UNIQUE NOT NULL,
+            product_id UUID UNIQUE NOT NULL,
             quantity INTEGER NOT NULL CHECK (quantity >= 0),
             created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

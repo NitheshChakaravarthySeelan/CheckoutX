@@ -96,3 +96,28 @@ CREATE TABLE checkouts (
         REFERENCES orders(id)
         ON DELETE SET NULL -- If order is deleted, set order_id in checkout to NULL
 );
+
+CREATE TABLE user_roles (
+    user_id UUID NOT NULL,
+    role VARCHAR(255) NOT NULL,
+    PRIMARY KEY (user_id, role),
+    CONSTRAINT fk_user_roles_user_id
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE CASCADE
+);
+
+
+-- Table: inventory_items
+CREATE TABLE inventory_items (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    product_id UUID NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity >= 0),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT fk_product
+        FOREIGN KEY(product_id)
+        REFERENCES products(id)
+        ON DELETE CASCADE
+);
+

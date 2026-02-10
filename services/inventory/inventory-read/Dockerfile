@@ -24,7 +24,7 @@ COPY services/inventory/inventory-read/build.rs ./services/inventory/inventory-r
 COPY services/inventory/inventory-read/src ./services/inventory/inventory-read/src
 
 # --- Copy shared proto definitions ---
-COPY shared/proto /shared/proto
+COPY shared/proto /app/shared/proto
 
 # Change to the service's directory
 WORKDIR /app/services/inventory/inventory-read

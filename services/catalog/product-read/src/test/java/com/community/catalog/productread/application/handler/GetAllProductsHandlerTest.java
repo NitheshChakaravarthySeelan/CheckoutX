@@ -13,6 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,8 +31,8 @@ class GetAllProductsHandlerTest {
     @Test
     void testHandle_WhenProductsExist_ShouldReturnListOfProductDTOs() {
         // Arrange
-        ProductView product1 = ProductView.builder().id("uuid-1").name("Product 1").price(new BigDecimal("10.00")).build();
-        ProductView product2 = ProductView.builder().id("uuid-2").name("Product 2").price(new BigDecimal("20.00")).build();
+        ProductView product1 = ProductView.builder().id(UUID.fromString("1a2b3c4d-5e6f-7890-1234-567890abcdef")).name("Product 1").price(new BigDecimal("10.00")).build();
+        ProductView product2 = ProductView.builder().id(UUID.fromString("fedcba98-7654-3210-fedc-ba9876543210")).name("Product 2").price(new BigDecimal("20.00")).build();
         List<ProductView> productList = List.of(product1, product2);
 
         GetAllProductsQuery query = new GetAllProductsQuery();

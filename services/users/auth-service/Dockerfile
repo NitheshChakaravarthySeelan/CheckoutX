@@ -9,13 +9,13 @@ COPY shared/proto /shared/proto
 COPY services/users/auth-service/pom.xml ./pom.xml
 
 # Build dependencies
-RUN mvn dependency:go-offline -Dmaven.wagon.http.readTimeout=120000
+RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline -Dmaven.wagon.http.readTimeout=120000 -Dmaven.wagon.http.retryHandler.count=5
 
 # Copy the service's source
 COPY services/users/auth-service/src ./src
 
 # Build the application
-RUN mvn clean install -DskipTests -Dmaven.wagon.http.readTimeout=120000
+RUN --mount=type=cache,target=/root/.m2 mvn clean install -DskipTests -Dmaven.wagon.http.readTimeout=120000 -Dmaven.wagon.http.retryHandler.count=5
 
 # Stage 2: Create the final, lightweight container
 FROM eclipse-temurin:17-jre-jammy

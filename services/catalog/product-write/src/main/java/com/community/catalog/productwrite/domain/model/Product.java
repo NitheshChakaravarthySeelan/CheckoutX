@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.UUID; // Added import for UUID
 
 @Entity
 @Table(name = "products")
@@ -18,7 +19,7 @@ import java.util.Date;
 public class Product {
 
     @Id
-    private String id;
+    private UUID id; // Changed type from String to UUID
 
     @Column(nullable = false)
     private String name;

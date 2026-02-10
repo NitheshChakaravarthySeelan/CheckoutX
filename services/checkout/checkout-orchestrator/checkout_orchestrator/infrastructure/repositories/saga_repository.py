@@ -13,10 +13,10 @@ class SagaRepository:
         CREATE TABLE IF NOT EXISTS saga_states (
             id VARCHAR(255) PRIMARY KEY,
             state VARCHAR(255) NOT NULL,
-            context JSONB NOT NULL,
-            processed_event_ids JSONB DEFAULT '[]'::jsonb NOT NULL,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            context TEXT NOT NULL,
+            processed_event_ids TEXT DEFAULT '[]' NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
         """
         await self.database.execute(query)

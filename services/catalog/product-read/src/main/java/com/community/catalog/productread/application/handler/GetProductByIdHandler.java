@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -16,10 +17,10 @@ public class GetProductByIdHandler {
     private final ProductViewRepository productViewRepository;
 
     public Optional<ProductDTO> handle(GetProductByIdQuery query) {
-        Optional<ProductView> productViewOptional = productViewRepository.findById(query.getProductId());
+        Optional<ProductView> productViewOptional = productViewRepository.findById(UUID.fromString(query.getProductId()));
 
         return productViewOptional.map(productView -> ProductDTO.builder()
-                .id(productView.getId())
+                .id(productView.getId().toString())
                 .name(productView.getName())
                 .description(productView.getDescription())
                 .price(productView.getPrice())
